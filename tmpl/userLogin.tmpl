@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        table {
+            background-color: #333;
+            color: #bbb;
+            border-radius: 25px;
+            padding: 10px;
+        }
+        input {
+            border-radius: 5px;
+            padding: 5px;
+        }
+        i {
+            font-size: 30px;
+            position: relative;
+            top:3px;
+            margin-right: 12px;
+        }
+        .name {
+            font-size: 16pt;
+            vertical-align: middle;
+            padding-right: 0px;
+        }
+    </style>
+    <link
+			rel="stylesheet"
+			href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css"
+		/>
+</head>
+<form method='post'>
+    <table style="margin-left:auto; margin-right:auto; position:relative; top: 300px" cellpadding=15 cellspacing=0>
+        <tr>
+            <td class='name'><i class="mdi mdi-account"></i>User</a></td>
+            <td>
+                <input name='user' type='text'>
+            </td>
+        </tr>
+        <tr>
+            <td class='name'><i class="mdi mdi-key"></i>Pass</td>
+            <td>
+                <input name='pass' type='password'>
+            </td>
+        </tr>
+        <tr>
+            <td colspan=2 style="text-align:center">
+                <input type='submit' value='Login'>
+            </td>
+        </tr>
+</form>

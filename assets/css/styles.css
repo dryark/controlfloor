@@ -1,0 +1,45 @@
+:root {
+  --sidebar-width: 4.5em;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto';
+}
+
+* {
+  outline: none;
+  box-sizing: border-box;
+}
+
+.main {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 992px;
+  padding: 2em 1.5em;
+}
+
+.main h2 {
+  font-size: 2em;
+  margin-top: 0px;
+}
+
+.main p {
+  color: #444;
+  font-size: 1.25em;
+  line-height: 2;
+  text-align: justify;
+}
+
+@media (min-width: 572px) {
+  .main {
+    margin-left: var(--sidebar-width);
+  }
+}
+
+@media (min-width: 992px) {
+  .main {
+    padding: 2.5em;
+  }
+}

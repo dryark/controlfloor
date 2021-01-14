@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Responsive Fixed Sidebar</title>
+
+		<link
+			rel="stylesheet"
+			href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
+		/>
+		<link rel="stylesheet" href="/assets/css/styles.css" />
+		<link rel="stylesheet" href="/assets/css/sidebar.css" />
+	</head>
+	<body>
+		<div class="sidebar">
+			<nav>
+				<ul class="sidebar__nav">
+					<li>
+						<a href="/" class="sidebar__nav__link">
+							<i class="mdi mdi-format-list-checkbox"></i>
+							<span class="sidebar__nav__text">Device List</span>
+						</a>
+					</li>
+					<li>
+						<a href="/devVideo" class="sidebar__nav__link">
+							<i class="mdi mdi-cellphone-play"></i>
+							<span class="sidebar__nav__text">Device Video</span>
+						</a>
+					</li>
+					<li>
+						<a href="#" class="sidebar__nav__link">
+							<i class="mdi mdi-clipboard-text"></i>
+							<span class="sidebar__nav__text">Device Details</span>
+						</a>
+					</li>
+					<li>
+						<a href="#" class="sidebar__nav__link">
+							<i class="mdi mdi-settings"></i>
+							<span class="sidebar__nav__text">Settings</span>
+						</a>
+					</li>
+					<li>
+						<a href="#" class="sidebar__nav__link">
+							<i class="mdi mdi-account-supervisor"></i>
+							<span class="sidebar__nav__text">Users</span>
+						</a>
+					</li>
+					<li>
+						<a href="/logout" class="sidebar__nav__link">
+							<i class="mdi mdi-account-circle"></i>
+							<span class="sidebar__nav__text">Logout</span>
+						</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+		<div class="main">
+		    {{ html .devices }}
+		</div>
+	</body>
+</html>
