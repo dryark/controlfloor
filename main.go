@@ -11,9 +11,12 @@ func main() {
     initTemplates( r )
     r.Static("/assets", "./assets")
     initSessionManager( r )
-    uAuth := registerUserRoutes( r )
-    pAuth := registerProviderRoutes( r )
-    registerDeviceRoutes( r, pAuth, uAuth )
+    
+    devTracker := NewDevTracker()
+    
+    uAuth := registerUserRoutes( r, devTracker )
+    pAuth := registerProviderRoutes( r, devTracker )
+    registerDeviceRoutes( r, pAuth, uAuth, devTracker )
     registerTestRoutes( r )
     
     r.Run( ":8080" )

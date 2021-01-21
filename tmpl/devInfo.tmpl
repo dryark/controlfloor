@@ -11,11 +11,13 @@
 		<link rel="stylesheet" href="/assets/css/sidebar.css" />
 	</head>
 	<body>
-		{{template "sidebar" dict "udid" "" }}
+		{{template "sidebar" dict "udid" .udid }}
 		<div class="main">
 		    <table cellpadding=4 cellspacing=0 border=1>
-		    <tr><th>Name</th><th>UDID</th><th>Provider ID</th></tr>
-		    {{ html .devices }}
+		    Device Name: {{ html .name }}<br>
+		    Device UDID: {{ html .udid }}<br>
+		    Click Width: {{ html .clickWidth }}<br>
+		    Click Height: {{ html .clickHeight }}<br>
 		    </table>
 		</div>
 	</body>

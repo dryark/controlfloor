@@ -3,16 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Responsive Fixed Sidebar</title>
+<title>ControlFloor</title>
 
-<link
-    rel="stylesheet"
-    href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css"
-/>
-<link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
-/>
+<link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
 <link rel="stylesheet" href="/assets/css/styles.css" />
 <link rel="stylesheet" href="/assets/css/sidebar.css" />
 		
@@ -34,8 +28,8 @@
     return [x,y];
   }
   var session='';
-  var wid=0;
-  var heg=0;
+  var clickWid={{ html .clickWidth }};
+  var clickHeg={{ html .clickHeight }};
   function req( type, url, handler, body ) {
     var xhr = new XMLHttpRequest();
     xhr.open( type, url );
@@ -45,11 +39,12 @@
     else xhr.send();
   }
   function clickAt( pos ) {
-    req( 'POST', 'http://localhost:8100/session/' + session + '/wda/tap/0', function() {}, JSON.stringify( { x: pos[0]/(1080/2)*wid, y: pos[1]/(1920/2)*heg } ) );
+    req( 'POST', 'http://localhost:8102/session/' + session + '/wda/tap/0', function() {}, JSON.stringify( {
+        x: (pos[0]/(750/2))*clickWid, 
+        y: (pos[1]/(1334/2))*clickHeg
+    } ) );
   }
   window.addEventListener("load", function(evt) {
-    var output = getel("output");
-    var input  = getel("input");
     var canvas = getel("canvas");
     var ctx    = canvas.getContext("2d");
     var ws;
@@ -57,38 +52,30 @@
     canvas.onclick = function( event ) {
       var pos = getCursorPosition( canvas, event );
       if( !session ) {
-        req( 'GET', 'http://localhost:8100/status', function( a,xhr ) {
-          session = xhr.response.sessionId;
-          req( 'GET', 'http://localhost:8100/session/'+session+'/window/size', function( a,xhr ) {
-            wid = xhr.response.value.width;
-            heg = xhr.response.value.height;
-            
-            clickAt( pos )
-          } );
-          
+        req( 'GET', 'http://localhost:8102/status', function( a,xhr ) {
+          session = xhr.response.sessionId;          
+          clickAt( pos )
         } );
       } else {
         clickAt( pos );
       }
     }
-    getel("open").onclick = function( event ) {
-      if( ws ) {
-        return false;
-      }
-      ws = new WebSocket("ws:\/\/localhost:8000\/echo");
-      ws.onopen = function( event ) {
+    
+    //ws = new WebSocket("ws:\/\/localhost:8000\/echo");
+    ws = new WebSocket("ws:\/\/localhost:8080\/imgStream?udid={{ html .udid }}");
+    ws.onopen = function( event ) {
         console.log("Websocket open");
-      }
-      ws.onclose = function( event ) {
+    }
+    ws.onclose = function( event ) {
         console.log("Websocket closed");
         ws = null;
-      }
-      ws.onmessage = function( event ) {
+    }
+    ws.onmessage = function( event ) {
         if( event.data instanceof Blob ) {
           var image = new Image();
           var url;
           image.onload = function() {
-            ctx.drawImage(image, 0, 0);
+            ctx.drawImage(image, 0, 0, 750/2, 1334/2 );
             URL.revokeObjectURL( url );
           };
           image.onerror = function( e ) {
@@ -99,99 +86,18 @@
           url = URL.createObjectURL( blob );
           image.src = url;
         }
-        else {
-          var text = "Response: " + event.data;
-          if( event.data != 'none' ) {
-            var d = document.createElement("div");
-            d.innerHTML = text;
-            output.appendChild( d );
-          }
-        }
-      }
-      ws.onerror = function( event ) {
+    }
+    ws.onerror = function( event ) {
         console.log( "Error: ", event.data );
-      }
-      return false;
-    };
-    getel("send").onclick = function( event ) {
-      if( !ws ) return false;
-      ws.send( input.value );
-      return false;
-    };
-    getel("close").onclick = function( event)  {
-      if(!ws) return false;
-      ws.close();
-      return false;
-    };
+    }
   });
 </script>
 </head>
 
-
-
 <body>
-    <div class="sidebar">
-        <nav>
-            <ul class="sidebar__nav">
-                <li>
-                    <a href="/" class="sidebar__nav__link">
-                        <i class="mdi mdi-format-list-checkbox"></i>
-                        <span class="sidebar__nav__text">Device List</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="sidebar__nav__link">
-                        <i class="mdi mdi-cellphone-play"></i>
-                        <span class="sidebar__nav__text">Device Video</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="sidebar__nav__link">
-                        <i class="mdi mdi-clipboard-text"></i>
-                        <span class="sidebar__nav__text">Device Details</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="sidebar__nav__link">
-                        <i class="mdi mdi-settings"></i>
-                        <span class="sidebar__nav__text">Settings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="sidebar__nav__link">
-                        <i class="mdi mdi-account-supervisor"></i>
-                        <span class="sidebar__nav__text">Users</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/logout" class="sidebar__nav__link">
-                        <i class="mdi mdi-account-circle"></i>
-                        <span class="sidebar__nav__text">Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
+    {{template "sidebar" dict "udid" .udid }}
     <div class="main">
-        <table>
-          <tr>
-            <td valign="top">
-              <canvas id="canvas" width="750" height="1334"></canvas>
-            </td>
-            <td valign="top" width="50%">
-              <form>
-                <button id="open">Open</button>
-                <button id="close">Close</button>
-                <br>
-                <input id="input" type="text" value="">
-                <button id="send">Send</button>
-              </form>
-            </td>
-            <td valign="top" width="50%">
-              <div id="output"></div>
-            </td>
-          </tr>
-        </table>
+       <canvas id="canvas" width="375" height="667"></canvas>
     </div>
 </body>
 </html>

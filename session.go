@@ -6,7 +6,12 @@ import (
     "time"
     "github.com/gin-gonic/gin"
     "github.com/alexedwards/scs/v2"
+    "encoding/gob"
 )
+
+func init() {
+	gob.Register(ProviderOb{})
+}
 
 var session *scs.SessionManager
 
@@ -21,6 +26,7 @@ func initSessionManager( r *gin.Engine ) {
 func Sessions() gin.HandlerFunc {
     return func( c *gin.Context ) {
         //fmt.Printf("Sessions")
+        
         r := c.Request
         
         token, _ := c.Cookie( "session" )

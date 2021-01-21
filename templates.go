@@ -1,6 +1,7 @@
 package main
 
 import (
+    "errors"
     "fmt"
     "html/template"
     "io/ioutil"
@@ -20,11 +21,27 @@ func toHTML( s string ) template.HTML {
     return template.HTML( s )
 }
 
+func dictFunc(values ...interface{}) (map[string]interface{}, error) {
+    if len(values)%2 != 0 {
+        return nil, errors.New("invalid dict call")
+    }
+    dict := make(map[string]interface{}, len(values)/2)
+    for i := 0; i < len(values); i+=2 {
+        key, ok := values[i].(string)
+        if !ok {
+            return nil, errors.New("dict keys must be strings")
+        }
+        dict[key] = values[i+1]
+    }
+    return dict, nil
+}
+
 func loadTemplatesFromDir( dir string ) (*template.Template, error) {
     t := template.New("")
     
     funcMap := template.FuncMap{
         "html": toHTML,
+        "dict": dictFunc,
     }
     t = t.Funcs( funcMap )
     

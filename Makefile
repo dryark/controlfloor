@@ -2,7 +2,9 @@ TARGET = main
 
 all: $(TARGET)
 
-$(TARGET): main.go provider.go session.go user.go db.go templates.go test.go device.go
+cf_sources := $(wildcard *.go)
+
+$(TARGET): $(cf_sources)
 	go build -o $(TARGET) .
 
 go.sum:
