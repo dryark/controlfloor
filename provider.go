@@ -68,17 +68,10 @@ type ProvPing struct {
     blah string
     onRes func( *uj.JNode )
 }
-
-func (self *ProvPing) resHandler() (func(*uj.JNode) ) {
-    return self.onRes
-}
-
+func (self *ProvPing) resHandler() (func(*uj.JNode) ) { return self.onRes }
+func (self *ProvPing) needsResponse() (bool) { return true }
 func (self *ProvPing) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"ping\"}\n", id)
-}
-
-func (self *ProvPing) needsResponse() (bool) {
-    return true
 }
 
 type ProvClick struct {
@@ -86,33 +79,41 @@ type ProvClick struct {
     x int
     y int
 }
-
-func (self *ProvClick) resHandler() (func(*uj.JNode) ) {
-    return nil
-}
-
+func (self *ProvClick) resHandler() (func(*uj.JNode) ) { return nil }
+func (self *ProvClick) needsResponse() (bool) { return false }
 func (self *ProvClick) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"click\",udid:\"%s\",x:%d,y:%d}\n",self.udid,self.x,self.y)
+    return fmt.Sprintf("{id:%d,type:\"click\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
 }
 
-func (self *ProvClick) needsResponse() (bool) {
-    return false
+type ProvHome struct {
+    udid string
+}
+func (self *ProvHome) resHandler() (func(*uj.JNode) ) { return nil }
+func (self *ProvHome) needsResponse() (bool) { return false }
+func (self *ProvHome) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"home\",udid:\"%s\"}\n",id,self.udid)
+}
+
+type ProvSwipe struct {
+    udid string
+    x1 int
+    y1 int
+    x2 int
+    y2 int
+}
+func (self *ProvSwipe) resHandler() (func(*uj.JNode) ) { return nil }
+func (self *ProvSwipe) needsResponse() (bool) { return false }
+func (self *ProvSwipe) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"swipe\",udid:\"%s\",x1:%d,y1:%d,x2:%d,y2:%d}\n",id,self.udid,self.x1,self.y1,self.x2,self.y2)
 }
 
 type ProvStartStream struct {
     udid string
 }
-
-func (self *ProvStartStream) resHandler() (func(*uj.JNode) ) {
-    return nil
-}
-
+func (self *ProvStartStream) resHandler() (func(*uj.JNode) ) { return nil }
+func (self *ProvStartStream) needsResponse() (bool) { return false }
 func (self *ProvStartStream) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"startStream\",udid:\"%s\"}\n",id,self.udid)
-}
-
-func (self *ProvStartStream) needsResponse() (bool) {
-    return false
 }
 
 type ProvStopStream struct {
@@ -236,16 +237,30 @@ func (self *ProviderConnection) doClick( udid string, x int, y int ) {
     self.provChan <- click
 }
 
-func (self *ProviderConnection) startImgStream( udid string ) {
-    self.provChan <- &ProvStartStream{
+func (self *ProviderConnection) doHome( udid string ) {
+    home := &ProvHome{
         udid: udid,
     }
+    self.provChan <- home
+}
+
+func (self *ProviderConnection) doSwipe( udid string, x1 int, y1 int, x2 int, y2 int ) {
+    swipe := &ProvSwipe{
+        udid: udid,
+        x1: x1,
+        y1: y1,
+        x2: x2,
+        y2: y2,
+    }
+    self.provChan <- swipe
+}
+
+func (self *ProviderConnection) startImgStream( udid string ) {
+    self.provChan <- &ProvStartStream{ udid: udid }
 }
 
 func (self *ProviderConnection) stopImgStream( udid string ) {
-    self.provChan <- &ProvStopStream{
-        udid: udid,
-    }
+    self.provChan <- &ProvStopStream{ udid: udid }
 }
 
 func handleImgProvider( c *gin.Context, devTracker *DevTracker ) {
@@ -264,6 +279,9 @@ func handleImgProvider( c *gin.Context, devTracker *DevTracker ) {
     
     //dev := getDevice( udid )
     
+    provId := devTracker.getDevProvId( udid )
+    provConn := devTracker.getProvConn( provId )
+    
     writer := c.Writer
     req := c.Request
     conn, err := wsupgrader.Upgrade( writer, req, nil )
@@ -275,16 +293,30 @@ func handleImgProvider( c *gin.Context, devTracker *DevTracker ) {
     vidConn := devTracker.getVidStreamOutput( udid )
     outSocket := vidConn.socket
     
+    go func() {
+        for {
+            if _, _, err := outSocket.NextReader(); err != nil {
+                outSocket.Close()
+                break
+            }
+        }
+    }()
     for {
         t, data, err := conn.ReadMessage()
         if err != nil {
+            conn = nil
             break
         }
         err = outSocket.WriteMessage( t, data )
         if err != nil {
+            outSocket = nil
+            provConn.stopImgStream( udid )
             break
         }
     }
+    
+    if conn != nil { conn.Close() }
+    if outSocket != nil { outSocket.Close() }
 }
 
 func handleProviderWS( c *gin.Context, devTracker *DevTracker ) {

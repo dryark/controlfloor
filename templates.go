@@ -36,12 +36,34 @@ func dictFunc(values ...interface{}) (map[string]interface{}, error) {
     return dict, nil
 }
 
+func tdefault(val interface{}, def interface{}) interface{} {
+    switch val.(type) {
+        case string:
+            if len( val.(string) ) == 0 {
+                fmt.Println("empty string")
+                return def
+            }
+        case bool:
+            if !val.(bool) {
+                fmt.Println("false bool")
+                return def
+            }
+        case nil:
+            fmt.Println("nil type")
+            return def
+    }
+
+    fmt.Println("fallthru")
+    return val
+}
+
 func loadTemplatesFromDir( dir string ) (*template.Template, error) {
     t := template.New("")
     
     funcMap := template.FuncMap{
         "html": toHTML,
         "dict": dictFunc,
+        "default": tdefault,
     }
     t = t.Funcs( funcMap )
     

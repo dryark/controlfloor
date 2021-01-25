@@ -28,37 +28,71 @@
     return [x,y];
   }
   var session='';
+  var udid="{{ html .udid }}";
   var clickWid={{ html .clickWidth }};
   var clickHeg={{ html .clickHeight }};
   function req( type, url, handler, body ) {
     var xhr = new XMLHttpRequest();
-    xhr.open( type, url );
+    xhr.open( type, url, true );
     xhr.responseType = 'json';
     xhr.onload = function(x) { handler(x,xhr); }
-    if( type == 'POST' && body ) xhr.send(body);
+    if( type == 'POST' && body ) {
+        if( typeof( body ) == 'object' ) {
+            var data = new FormData();
+            var test = {};
+            for( var k in body ) if( body.hasOwnProperty( k ) ) { data.append( k, body[k] ); test[k] = body[k]; }
+            console.log( test );
+            xhr.send( data );
+        }
+        else xhr.send(body);
+    }
     else xhr.send();
   }
   function clickAt( pos ) {
-    req( 'POST', 'http://localhost:8102/session/' + session + '/wda/tap/0', function() {}, JSON.stringify( {
-        x: (pos[0]/(750/2))*clickWid, 
-        y: (pos[1]/(1334/2))*clickHeg
-    } ) );
+    var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
+    var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
+    var base = document.location.protocol + '//' + document.location.host;
+    //req( 'POST', 'http://localhost:8102/session/' + session + '/wda/tap/0', function() {}, JSON.stringify( { x: x, y: y } ) );
+    /*var req1 = {
+        "actions":[ {
+                "action":"tap",
+                "options":{ "x":x, "y":y }
+        } ]
+    };
+    req( 'POST', 'http://localhost:8102/session/' + session + '/wda/touch/perform', function() {}, JSON.stringify( req1 ) );*/
+    req( 'POST', base + '/devClick', function() {}, { udid, x, y } );    
+  }
+  function swipe( pos1, pos2 ) {
+    var x1 = Math.floor( (pos1[0]/(750/2))*clickWid ); 
+    var y1 = Math.floor( (pos1[1]/(1334/2))*clickHeg );
+    var x2 = Math.floor( (pos2[0]/(750/2))*clickWid ); 
+    var y2 = Math.floor( (pos2[1]/(1334/2))*clickHeg );
+    var base = document.location.protocol + '//' + document.location.host;
+    req( 'POST', base + '/devSwipe', function() {}, { udid, x1, y1, x2, y2 } );    
   }
   window.addEventListener("load", function(evt) {
     var canvas = getel("canvas");
     var ctx    = canvas.getContext("2d");
+    var home   = getel("home");
     var ws;
+    var pos1;
     
-    canvas.onclick = function( event ) {
-      var pos = getCursorPosition( canvas, event );
-      if( !session ) {
-        req( 'GET', 'http://localhost:8102/status', function( a,xhr ) {
-          session = xhr.response.sessionId;          
-          clickAt( pos )
-        } );
-      } else {
-        clickAt( pos );
+    home.onclick = function( event ) {
+      req( 'POST', '/devHome', function() {}, { udid } );  
+    }
+    
+    canvas.onmousedown = function( event ) {
+      pos1 = getCursorPosition( canvas, event );
+    }
+    
+    canvas.onmouseup = function( event ) {
+      var pos2 = getCursorPosition( canvas, event );
+      var dx = Math.abs( pos2[0] - pos1[0] );
+      var dy = Math.abs( pos2[1] - pos1[1] );
+      if( dx > 3 || dy > 3 ) {
+        swipe( pos1, pos2 );
       }
+      else clickAt( pos1 );
     }
     
     //ws = new WebSocket("ws:\/\/localhost:8000\/echo");
@@ -97,7 +131,8 @@
 <body>
     {{template "sidebar" dict "udid" .udid }}
     <div class="main">
-       <canvas id="canvas" width="375" height="667"></canvas>
+       <canvas id="canvas" width="375" height="667"></canvas><br>
+       <div style="width:375px; font-size: 32px"><center><i id='home' class="mdi mdi-home"></i></div>
     </div>
 </body>
 </html>

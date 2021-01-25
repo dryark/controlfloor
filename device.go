@@ -20,9 +20,9 @@ func registerDeviceRoutes( r *gin.Engine, pAuth *gin.RouterGroup, uAuth *gin.Rou
     // - Video seems active/inactive
     
     //uAuth.GET("/devClick", showDevClick )
-    uAuth.POST("/devClick", func( c *gin.Context ) {
-        handleDevClick( c, devTracker )
-    } )
+    uAuth.POST("/devClick", func( c *gin.Context ) { handleDevClick( c, devTracker ) } )
+    uAuth.POST("/devHome", func( c *gin.Context ) { handleDevHome( c, devTracker ) } )
+    uAuth.POST("/devSwipe", func( c *gin.Context ) { handleDevSwipe( c, devTracker ) } )
     
     uAuth.GET("/devInfo", func( c *gin.Context ) {
         showDevInfo( c, devTracker )
@@ -69,6 +69,26 @@ func handleDevClick( c *gin.Context, devTracker *DevTracker ) {
     provId := devTracker.getDevProvId( udid )
     provConn := devTracker.getProvConn( provId )
     provConn.doClick( udid, x, y )
+}
+
+func handleDevHome( c *gin.Context, devTracker *DevTracker ) {
+    udid := c.PostForm("udid")
+    
+    provId := devTracker.getDevProvId( udid )
+    provConn := devTracker.getProvConn( provId )
+    provConn.doHome( udid )
+}
+
+func handleDevSwipe( c *gin.Context, devTracker *DevTracker ) {
+    x1, _ := strconv.Atoi( c.PostForm("x1") )
+    y1, _ := strconv.Atoi( c.PostForm("y1") )
+    x2, _ := strconv.Atoi( c.PostForm("x2") )
+    y2, _ := strconv.Atoi( c.PostForm("y2") )
+    udid := c.PostForm("udid")
+    
+    provId := devTracker.getDevProvId( udid )
+    provConn := devTracker.getProvConn( provId )
+    provConn.doSwipe( udid, x1, y1, x2, y2 )
 }
 
 func handleDevPing( c *gin.Context ) {

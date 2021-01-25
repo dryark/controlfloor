@@ -156,6 +156,12 @@ func addConf( db *xorm.Engine, regPass string ) {
 }
 
 func addDevice( udid string, name string, pId int64, width int, height int, clickWidth int, clickHeight int ) {
+    fmt.Printf("Adding device:\n"+
+        "  udid:%s\n"+
+        "  name:%s\n"+
+        "  clickWidth:%d\n"+
+        "  clickHegiht:%d\n",
+        udid,name,clickWidth,clickHeight)
     dev := DbDevice{
         Udid: udid,
         Name: name,
@@ -168,7 +174,7 @@ func addDevice( udid string, name string, pId int64, width int, height int, clic
     cur := getDevice( udid )
     if cur != nil {
         fmt.Printf("Device with udid %s already existed\n", dev.Udid )
-        _, err := gDb.ID( udid ).Cols("Name","ProviderId").Update( &dev )
+        _, err := gDb.ID( udid ).Update( &dev ) // Cols("Name","ProviderId","ClickWidth","ClickHeight").
         if err != nil {
             panic( err )
         }

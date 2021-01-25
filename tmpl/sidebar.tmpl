@@ -7,6 +7,7 @@
                     <span class="sidebar__nav__text">Device List</span>
                 </a>
             </li>
+            {{ if ne (default .udid "") "" }}
             <li>
                 <a href="/devVideo?udid={{html .udid}}" class="sidebar__nav__link">
                     <i class="mdi mdi-cellphone-play"></i>
@@ -19,6 +20,7 @@
                     <span class="sidebar__nav__text">Device Details</span>
                 </a>
             </li>
+            {{ end }}
             <li>
                 <a href="#" class="sidebar__nav__link">
                     <i class="mdi mdi-settings"></i>
