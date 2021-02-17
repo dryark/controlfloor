@@ -52,14 +52,6 @@
     var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
     var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
     var base = document.location.protocol + '//' + document.location.host;
-    //req( 'POST', 'http://localhost:8102/session/' + session + '/wda/tap/0', function() {}, JSON.stringify( { x: x, y: y } ) );
-    /*var req1 = {
-        "actions":[ {
-                "action":"tap",
-                "options":{ "x":x, "y":y }
-        } ]
-    };
-    req( 'POST', 'http://localhost:8102/session/' + session + '/wda/touch/perform', function() {}, JSON.stringify( req1 ) );*/
     req( 'POST', base + '/devClick', function() {}, { udid, x, y } );    
   }
   function swipe( pos1, pos2 ) {
@@ -95,8 +87,9 @@
       else clickAt( pos1 );
     }
     
-    //ws = new WebSocket("ws:\/\/localhost:8000\/echo");
-    ws = new WebSocket("ws:\/\/localhost:8080\/imgStream?udid={{ html .udid }}");
+    var wsprot = ( document.location.protocol == 'https' ) ? "wss" : "ws"; 
+    var url = wsprot+":\/\/"+document.location.host+"\/imgStream?udid={{ html .udid }}";
+    ws = new WebSocket( url );
     ws.onopen = function( event ) {
         console.log("Websocket open");
     }
@@ -119,6 +112,9 @@
           
           url = URL.createObjectURL( blob );
           image.src = url;
+        }
+        else {
+            console.log( event.data );
         }
     }
     ws.onerror = function( event ) {
