@@ -9,6 +9,8 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/gorilla/websocket v1.4.2
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
-	github.com/nanoscopic/ujsonin v1.9.0
+	github.com/nanoscopic/uclop v1.1.0
+	github.com/nanoscopic/ujsonin v1.13.0
+	github.com/sirupsen/logrus v1.8.0
 	xorm.io/xorm v1.0.6
 )

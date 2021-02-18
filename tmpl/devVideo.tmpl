@@ -87,7 +87,7 @@
       else clickAt( pos1 );
     }
     
-    var wsprot = ( document.location.protocol == 'https' ) ? "wss" : "ws"; 
+    var wsprot = ( document.location.protocol == 'https:' ) ? "wss" : "ws"; 
     var url = wsprot+":\/\/"+document.location.host+"\/imgStream?udid={{ html .udid }}";
     ws = new WebSocket( url );
     ws.onopen = function( event ) {

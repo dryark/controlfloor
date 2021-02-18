@@ -2,3 +2,6 @@
 main
 db.sqlite3
 go.sum
+server.crt
+server.key
+cert.conf

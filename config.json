@@ -1,0 +1,6 @@
+{
+    // This listens on all interfaces on port 8080
+    listen: ":8080"
+    
+    https: true
+}
