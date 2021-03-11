@@ -85,6 +85,28 @@ func (self *ProvClick) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"click\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
 }
 
+type ProvHardPress struct {
+    udid string
+    x int
+    y int
+}
+func (self *ProvHardPress) resHandler() (func(*uj.JNode) ) { return nil }
+func (self *ProvHardPress) needsResponse() (bool) { return false }
+func (self *ProvHardPress) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"hardPress\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
+}
+
+type ProvLongPress struct {
+    udid string
+    x int
+    y int
+}
+func (self *ProvLongPress) resHandler() (func(*uj.JNode) ) { return nil }
+func (self *ProvLongPress) needsResponse() (bool) { return false }
+func (self *ProvLongPress) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"longPress\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
+}
+
 type ProvHome struct {
     udid string
 }
@@ -230,6 +252,24 @@ func (self *ProviderConnection) doPing() {
 
 func (self *ProviderConnection) doClick( udid string, x int, y int ) {
     click := &ProvClick{
+        udid: udid,
+        x: x,
+        y: y,
+    }
+    self.provChan <- click
+}
+
+func (self *ProviderConnection) doHardPress( udid string, x int, y int ) {
+    click := &ProvHardPress{
+        udid: udid,
+        x: x,
+        y: y,
+    }
+    self.provChan <- click
+}
+
+func (self *ProviderConnection) doLongPress( udid string, x int, y int ) {
+    click := &ProvLongPress{
         udid: udid,
         x: x,
         y: y,

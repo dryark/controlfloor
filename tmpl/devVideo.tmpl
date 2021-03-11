@@ -54,6 +54,18 @@
     var base = document.location.protocol + '//' + document.location.host;
     req( 'POST', base + '/devClick', function() {}, { udid, x, y } );    
   }
+  function doHardPress( pos ) {
+    var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
+    var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
+    var base = document.location.protocol + '//' + document.location.host;
+    req( 'POST', base + '/devHardPress', function() {}, { udid, x, y } );    
+  }
+  function doLongPress( pos ) {
+    var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
+    var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
+    var base = document.location.protocol + '//' + document.location.host;
+    req( 'POST', base + '/devLongPress', function() {}, { udid, x, y } );    
+  }
   function swipe( pos1, pos2 ) {
     var x1 = Math.floor( (pos1[0]/(750/2))*clickWid ); 
     var y1 = Math.floor( (pos1[1]/(1334/2))*clickHeg );
@@ -62,22 +74,49 @@
     var base = document.location.protocol + '//' + document.location.host;
     req( 'POST', base + '/devSwipe', function() {}, { udid, x1, y1, x2, y2 } );    
   }
+  var mode = 'normal';
   window.addEventListener("load", function(evt) {
     var canvas = getel("canvas");
     var ctx    = canvas.getContext("2d");
     var home   = getel("home");
+    var hardPress = getel("hardPress");
+    var longPress = getel("longPress");
     var ws;
     var pos1;
     
     home.onclick = function( event ) {
       req( 'POST', '/devHome', function() {}, { udid } );  
     }
+    hardPress.onclick = function( event ) {
+      if( mode != 'hard' ) {
+        hardPress.className = 'mdi mdi-anvil mActive';
+        longPress.className = 'mdi mdi-alarm-multiple mInactive';
+        mode = 'hard';
+      } else {
+        hardPress.className = 'mdi mdi-anvil mInactive';
+        mode = 'normal';
+      }
+    }
+    longPress.onclick = function( event ) {
+      if( mode != 'long' ) {
+        longPress.className = 'mdi mdi-alarm-multiple mActive';
+        hardPress.className = 'mdi mdi-anvil mInactive';
+        mode = 'long';
+      } else {
+        longPress.className = 'mdi mdi-alarm-multiple mInactive';
+        mode = 'normal';
+      }
+    }
     
     canvas.onmousedown = function( event ) {
-      pos1 = getCursorPosition( canvas, event );
+      var pos = getCursorPosition( canvas, event );
+      if     ( mode == 'hard' ) doHardPress( pos );
+      else if( mode == 'long' ) doLongPress( pos );
+      else                      pos1 = pos;
     }
     
     canvas.onmouseup = function( event ) {
+      if( mode != 'normal' ) return;
       var pos2 = getCursorPosition( canvas, event );
       var dx = Math.abs( pos2[0] - pos1[0] );
       var dy = Math.abs( pos2[1] - pos1[1] );
@@ -127,8 +166,14 @@
 <body>
     {{template "sidebar" dict "udid" .udid }}
     <div class="main">
-       <canvas id="canvas" width="375" height="667"></canvas><br>
-       <div style="width:375px; font-size: 32px"><center><i id='home' class="mdi mdi-home"></i></div>
+        <canvas id="canvas" width="375" height="667"></canvas><br>
+        <div style="width:375px; font-size: 32px">
+            <center>
+                <i id='home' class="mdi mdi-home"></i>
+                <i id='hardPress' class="mdi mdi-anvil mInactive"></i>
+                <i id='longPress' class="mdi mdi-alarm-multiple mInactive"></i>
+            </i>
+        </div>
     </div>
 </body>
 </html>

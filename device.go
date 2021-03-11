@@ -21,6 +21,8 @@ func registerDeviceRoutes( r *gin.Engine, pAuth *gin.RouterGroup, uAuth *gin.Rou
     
     //uAuth.GET("/devClick", showDevClick )
     uAuth.POST("/devClick", func( c *gin.Context ) { handleDevClick( c, devTracker ) } )
+    uAuth.POST("/devHardPress", func( c *gin.Context ) { handleDevHardPress( c, devTracker ) } )
+    uAuth.POST("/devLongPress", func( c *gin.Context ) { handleDevLongPress( c, devTracker ) } )
     uAuth.POST("/devHome", func( c *gin.Context ) { handleDevHome( c, devTracker ) } )
     uAuth.POST("/devSwipe", func( c *gin.Context ) { handleDevSwipe( c, devTracker ) } )
     
@@ -69,6 +71,26 @@ func handleDevClick( c *gin.Context, devTracker *DevTracker ) {
     provId := devTracker.getDevProvId( udid )
     provConn := devTracker.getProvConn( provId )
     provConn.doClick( udid, x, y )
+}
+
+func handleDevHardPress( c *gin.Context, devTracker *DevTracker ) {
+    x, _ := strconv.Atoi( c.PostForm("x") )
+    y, _ := strconv.Atoi( c.PostForm("y") )
+    udid := c.PostForm("udid")
+    
+    provId := devTracker.getDevProvId( udid )
+    provConn := devTracker.getProvConn( provId )
+    provConn.doHardPress( udid, x, y )
+}
+
+func handleDevLongPress( c *gin.Context, devTracker *DevTracker ) {
+    x, _ := strconv.Atoi( c.PostForm("x") )
+    y, _ := strconv.Atoi( c.PostForm("y") )
+    udid := c.PostForm("udid")
+    
+    provId := devTracker.getDevProvId( udid )
+    provConn := devTracker.getProvConn( provId )
+    provConn.doLongPress( udid, x, y )
 }
 
 func handleDevHome( c *gin.Context, devTracker *DevTracker ) {

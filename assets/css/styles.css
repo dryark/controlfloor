@@ -43,3 +43,11 @@ body {
     padding: 2.5em;
   }
 }
+
+.mInactive {
+  color: #444;
+}
+
+.mActive {
+  color: red;
+}
