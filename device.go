@@ -20,11 +20,12 @@ func registerDeviceRoutes( r *gin.Engine, pAuth *gin.RouterGroup, uAuth *gin.Rou
     // - Video seems active/inactive
     
     //uAuth.GET("/devClick", showDevClick )
-    uAuth.POST("/devClick", func( c *gin.Context ) { handleDevClick( c, devTracker ) } )
+    uAuth.POST("/devClick",     func( c *gin.Context ) { handleDevClick( c, devTracker ) } )
     uAuth.POST("/devHardPress", func( c *gin.Context ) { handleDevHardPress( c, devTracker ) } )
     uAuth.POST("/devLongPress", func( c *gin.Context ) { handleDevLongPress( c, devTracker ) } )
-    uAuth.POST("/devHome", func( c *gin.Context ) { handleDevHome( c, devTracker ) } )
-    uAuth.POST("/devSwipe", func( c *gin.Context ) { handleDevSwipe( c, devTracker ) } )
+    uAuth.POST("/devHome",      func( c *gin.Context ) { handleDevHome( c, devTracker ) } )
+    uAuth.POST("/devSwipe",     func( c *gin.Context ) { handleDevSwipe( c, devTracker ) } )
+    uAuth.POST("/keys",         func( c *gin.Context ) { handleKeys( c, devTracker ) } )
     
     uAuth.GET("/devInfo", func( c *gin.Context ) {
         showDevInfo( c, devTracker )
@@ -63,54 +64,53 @@ func showDevInfo( c *gin.Context, devTracker *DevTracker ) {
     } )
 }
 
-func handleDevClick( c *gin.Context, devTracker *DevTracker ) {
+func getPc( c *gin.Context, devTracker *DevTracker ) (*ProviderConnection,string) {
+    udid := c.PostForm("udid")
+    provId := devTracker.getDevProvId( udid )
+    provConn := devTracker.getProvConn( provId )
+    return provConn, udid
+}
+
+func handleDevClick( c *gin.Context, dt *DevTracker ) {
     x, _ := strconv.Atoi( c.PostForm("x") )
     y, _ := strconv.Atoi( c.PostForm("y") )
-    udid := c.PostForm("udid")
-    
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
-    provConn.doClick( udid, x, y )
+    pc, udid := getPc( c, dt )
+    pc.doClick( udid, x, y )
 }
 
-func handleDevHardPress( c *gin.Context, devTracker *DevTracker ) {
+func handleDevHardPress( c *gin.Context, dt *DevTracker ) {
     x, _ := strconv.Atoi( c.PostForm("x") )
     y, _ := strconv.Atoi( c.PostForm("y") )
-    udid := c.PostForm("udid")
-    
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
-    provConn.doHardPress( udid, x, y )
+    pc, udid := getPc( c, dt )
+    pc.doHardPress( udid, x, y )
 }
 
-func handleDevLongPress( c *gin.Context, devTracker *DevTracker ) {
+func handleDevLongPress( c *gin.Context, dt *DevTracker ) {
     x, _ := strconv.Atoi( c.PostForm("x") )
     y, _ := strconv.Atoi( c.PostForm("y") )
-    udid := c.PostForm("udid")
-    
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
-    provConn.doLongPress( udid, x, y )
+    pc, udid := getPc( c, dt )
+    pc.doLongPress( udid, x, y )
 }
 
-func handleDevHome( c *gin.Context, devTracker *DevTracker ) {
+func handleDevHome( c *gin.Context, dt *DevTracker ) {
     udid := c.PostForm("udid")
-    
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
-    provConn.doHome( udid )
+    pc, udid := getPc( c, dt )
+    pc.doHome( udid )
 }
 
-func handleDevSwipe( c *gin.Context, devTracker *DevTracker ) {
+func handleDevSwipe( c *gin.Context, dt *DevTracker ) {
     x1, _ := strconv.Atoi( c.PostForm("x1") )
     y1, _ := strconv.Atoi( c.PostForm("y1") )
     x2, _ := strconv.Atoi( c.PostForm("x2") )
     y2, _ := strconv.Atoi( c.PostForm("y2") )
-    udid := c.PostForm("udid")
-    
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
-    provConn.doSwipe( udid, x1, y1, x2, y2 )
+    pc, udid := getPc( c, dt )
+    pc.doSwipe( udid, x1, y1, x2, y2 )
+}
+
+func handleKeys( c *gin.Context, dt *DevTracker ) {
+    keys := c.PostForm("keys")
+    pc, udid := getPc( c, dt )
+    pc.doKeys( udid, keys )
 }
 
 func handleDevPing( c *gin.Context ) {

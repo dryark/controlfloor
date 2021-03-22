@@ -116,6 +116,16 @@ func (self *ProvHome) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"home\",udid:\"%s\"}\n",id,self.udid)
 }
 
+type ProvKeys struct {
+    udid string
+    keys string
+}
+func (self *ProvKeys) resHandler() (func(*uj.JNode) ) { return nil }
+func (self *ProvKeys) needsResponse() (bool) { return false }
+func (self *ProvKeys) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"keys\",udid:\"%s\",keys:\"%s\"}\n",id,self.udid,self.keys)
+}
+
 type ProvSwipe struct {
     udid string
     x1 int
@@ -282,6 +292,14 @@ func (self *ProviderConnection) doHome( udid string ) {
         udid: udid,
     }
     self.provChan <- home
+}
+
+func (self *ProviderConnection) doKeys( udid string, keys string ) {
+    action := &ProvKeys{
+        udid: udid,
+        keys: keys,
+    }
+    self.provChan <- action
 }
 
 func (self *ProviderConnection) doSwipe( udid string, x1 int, y1 int, x2 int, y2 int ) {

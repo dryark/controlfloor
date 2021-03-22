@@ -31,6 +31,8 @@
   var udid="{{ html .udid }}";
   var clickWid={{ html .clickWidth }};
   var clickHeg={{ html .clickHeight }};
+  var base = document.location.protocol + '//' + document.location.host;
+  
   function req( type, url, handler, body ) {
     var xhr = new XMLHttpRequest();
     xhr.open( type, url, true );
@@ -51,19 +53,16 @@
   function clickAt( pos ) {
     var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
     var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
-    var base = document.location.protocol + '//' + document.location.host;
     req( 'POST', base + '/devClick', function() {}, { udid, x, y } );    
   }
   function doHardPress( pos ) {
     var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
     var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
-    var base = document.location.protocol + '//' + document.location.host;
     req( 'POST', base + '/devHardPress', function() {}, { udid, x, y } );    
   }
   function doLongPress( pos ) {
     var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
     var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
-    var base = document.location.protocol + '//' + document.location.host;
     req( 'POST', base + '/devLongPress', function() {}, { udid, x, y } );    
   }
   function swipe( pos1, pos2 ) {
@@ -71,10 +70,32 @@
     var y1 = Math.floor( (pos1[1]/(1334/2))*clickHeg );
     var x2 = Math.floor( (pos2[0]/(750/2))*clickWid ); 
     var y2 = Math.floor( (pos2[1]/(1334/2))*clickHeg );
-    var base = document.location.protocol + '//' + document.location.host;
     req( 'POST', base + '/devSwipe', function() {}, { udid, x1, y1, x2, y2 } );    
   }
+  var keyqueue = [];
+  var firstkeyPress = 0;
+  function sendKeys() {
+    if( !keyqueue.length ) return;
+    var diffMs = Date.now() - firstkeyPress;
+    if( diffMs < 500 ) {
+      setTimeout( sendKeys, 200 );
+      return;
+    }
+    var keys = keyqueue.join(",");
+    keyqueue = [];
+    firstkeyPress = 0;
+    
+    req( 'POST', base + '/keys', function() {}, { udid, keys } );
+  }
   var mode = 'normal';
+  var capture = {};
+  var capture2 = {};
+  capture[8] = 8; // backspace
+  capture[9] = 9; // tab
+  capture[13] = 13; // enter
+  capture[46] = 127; // delete; map to ascii delete
+  capture2[39] = 1; // ' - quick search in firefox
+  capture2[47] = 1; // / - quick search also
   window.addEventListener("load", function(evt) {
     var canvas = getel("canvas");
     var ctx    = canvas.getContext("2d");
@@ -124,6 +145,28 @@
         swipe( pos1, pos2 );
       }
       else clickAt( pos1 );
+    }
+    
+    window.onkeydown = function( event ) {
+      var keycode = event.which;
+      if( capture[ keycode ] ) {
+        keycode = capture[ keycode ];
+        event.preventDefault();
+        if( !firstkeyPress ) firstkeyPress = Date.now();
+        keyqueue.push( keycode );
+        setTimeout( sendKeys, 500 );
+      }
+      else console.log( "key " + keycode );
+    }
+    
+    window.onkeypress = function( event ) {
+      var keycode = event.which;
+      if( !firstkeyPress ) firstkeyPress = Date.now();
+      keyqueue.push( keycode );
+      setTimeout( sendKeys, 500 );
+      if( capture2[ keycode ] ) {
+        event.preventDefault();
+      } else console.log( "key2 " + keycode );
     }
     
     var wsprot = ( document.location.protocol == 'https:' ) ? "wss" : "ws"; 
