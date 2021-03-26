@@ -5,7 +5,7 @@ import (
     "os"
     _ "github.com/mattn/go-sqlite3"
     "xorm.io/xorm"
-    uj "github.com/nanoscopic/ujsonin/mod"
+    uj "github.com/nanoscopic/ujsonin/v2/mod"
 )
 
 var gDb *xorm.Engine

@@ -7,11 +7,35 @@ import (
     "github.com/gin-gonic/gin"
 )
 
-func registerDeviceRoutes( r *gin.Engine, pAuth *gin.RouterGroup, uAuth *gin.RouterGroup, devTracker *DevTracker ) {
+type DevHandler struct {
+    providerAuthGroup *gin.RouterGroup
+    userAuthGroup     *gin.RouterGroup
+    devTracker        *DevTracker
+    sessionManager    *cfSessionManager
+}
+
+func NewDevHandler(
+    providerAuthGroup *gin.RouterGroup,
+    userAuthGroup     *gin.RouterGroup,
+    devTracker        *DevTracker,
+    sessionManager    *cfSessionManager,
+) *DevHandler {
+    return &DevHandler{
+        providerAuthGroup,
+        userAuthGroup,
+        devTracker,
+        sessionManager,
+    }
+}
+
+func (self *DevHandler) registerDeviceRoutes() {
+    pAuth := self.providerAuthGroup
+    uAuth := self.userAuthGroup
+    
     fmt.Println("Registering device routes")
     //pAuth.GET("/devStatus", showDevStatus )
     pAuth.POST("/devStatus", func( c *gin.Context ) {
-        handleDevStatus( c, devTracker )
+        self.handleDevStatus( c )
     } )
     // - Device is present on provider
     // - Device Info fetched from device
@@ -20,23 +44,23 @@ func registerDeviceRoutes( r *gin.Engine, pAuth *gin.RouterGroup, uAuth *gin.Rou
     // - Video seems active/inactive
     
     //uAuth.GET("/devClick", showDevClick )
-    uAuth.POST("/devClick",     func( c *gin.Context ) { handleDevClick( c, devTracker ) } )
-    uAuth.POST("/devHardPress", func( c *gin.Context ) { handleDevHardPress( c, devTracker ) } )
-    uAuth.POST("/devLongPress", func( c *gin.Context ) { handleDevLongPress( c, devTracker ) } )
-    uAuth.POST("/devHome",      func( c *gin.Context ) { handleDevHome( c, devTracker ) } )
-    uAuth.POST("/devSwipe",     func( c *gin.Context ) { handleDevSwipe( c, devTracker ) } )
-    uAuth.POST("/keys",         func( c *gin.Context ) { handleKeys( c, devTracker ) } )
+    uAuth.POST("/devClick",     func( c *gin.Context ) { self.handleDevClick( c ) } )
+    uAuth.POST("/devHardPress", func( c *gin.Context ) { self.handleDevHardPress( c ) } )
+    uAuth.POST("/devLongPress", func( c *gin.Context ) { self.handleDevLongPress( c ) } )
+    uAuth.POST("/devHome",      func( c *gin.Context ) { self.handleDevHome( c ) } )
+    uAuth.POST("/devSwipe",     func( c *gin.Context ) { self.handleDevSwipe( c ) } )
+    uAuth.POST("/keys",         func( c *gin.Context ) { self.handleKeys( c ) } )
     
     uAuth.GET("/devInfo", func( c *gin.Context ) {
-        showDevInfo( c, devTracker )
+        self.showDevInfo( c )
     } )
     
-    uAuth.GET("/devVideo", showDevVideo )
+    uAuth.GET("/devVideo", self.showDevVideo )
     
-    uAuth.GET("/devPing", handleDevPing )
+    uAuth.GET("/devPing", self.handleDevPing )
 }
 
-func showDevInfo( c *gin.Context, devTracker *DevTracker ) {
+func (self *DevHandler) showDevInfo( c *gin.Context ) {
     udid, uok := c.GetQuery("udid")
     if !uok {
         c.HTML( http.StatusOK, "devInfo", gin.H{
@@ -64,59 +88,59 @@ func showDevInfo( c *gin.Context, devTracker *DevTracker ) {
     } )
 }
 
-func getPc( c *gin.Context, devTracker *DevTracker ) (*ProviderConnection,string) {
+func (self *DevHandler) getPc( c *gin.Context ) (*ProviderConnection,string) {
     udid := c.PostForm("udid")
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
+    provId := self.devTracker.getDevProvId( udid )
+    provConn := self.devTracker.getProvConn( provId )
     return provConn, udid
 }
 
-func handleDevClick( c *gin.Context, dt *DevTracker ) {
+func (self *DevHandler) handleDevClick( c *gin.Context ) {
     x, _ := strconv.Atoi( c.PostForm("x") )
     y, _ := strconv.Atoi( c.PostForm("y") )
-    pc, udid := getPc( c, dt )
+    pc, udid := self.getPc( c )
     pc.doClick( udid, x, y )
 }
 
-func handleDevHardPress( c *gin.Context, dt *DevTracker ) {
+func (self *DevHandler) handleDevHardPress( c *gin.Context ) {
     x, _ := strconv.Atoi( c.PostForm("x") )
     y, _ := strconv.Atoi( c.PostForm("y") )
-    pc, udid := getPc( c, dt )
+    pc, udid := self.getPc( c )
     pc.doHardPress( udid, x, y )
 }
 
-func handleDevLongPress( c *gin.Context, dt *DevTracker ) {
+func (self *DevHandler) handleDevLongPress( c *gin.Context ) {
     x, _ := strconv.Atoi( c.PostForm("x") )
     y, _ := strconv.Atoi( c.PostForm("y") )
-    pc, udid := getPc( c, dt )
+    pc, udid := self.getPc( c )
     pc.doLongPress( udid, x, y )
 }
 
-func handleDevHome( c *gin.Context, dt *DevTracker ) {
+func (self *DevHandler) handleDevHome( c *gin.Context ) {
     udid := c.PostForm("udid")
-    pc, udid := getPc( c, dt )
+    pc, udid := self.getPc( c )
     pc.doHome( udid )
 }
 
-func handleDevSwipe( c *gin.Context, dt *DevTracker ) {
+func (self *DevHandler) handleDevSwipe( c *gin.Context ) {
     x1, _ := strconv.Atoi( c.PostForm("x1") )
     y1, _ := strconv.Atoi( c.PostForm("y1") )
     x2, _ := strconv.Atoi( c.PostForm("x2") )
     y2, _ := strconv.Atoi( c.PostForm("y2") )
-    pc, udid := getPc( c, dt )
+    pc, udid := self.getPc( c )
     pc.doSwipe( udid, x1, y1, x2, y2 )
 }
 
-func handleKeys( c *gin.Context, dt *DevTracker ) {
+func (self *DevHandler) handleKeys( c *gin.Context ) {
     keys := c.PostForm("keys")
-    pc, udid := getPc( c, dt )
+    pc, udid := self.getPc( c )
     pc.doKeys( udid, keys )
 }
 
-func handleDevPing( c *gin.Context ) {
+func (self *DevHandler) handleDevPing( c *gin.Context ) {
 }
 
-func showDevVideo( c *gin.Context ) {
+func (self *DevHandler) showDevVideo( c *gin.Context ) {
     udid, uok := c.GetQuery("udid")
     if !uok {
         c.HTML( http.StatusOK, "error", gin.H{
@@ -134,8 +158,10 @@ func showDevVideo( c *gin.Context ) {
     } )
 }
 
-func handleDevStatus( c *gin.Context, devTracker *DevTracker ) {
-    s := getSession( c )
+func (self *DevHandler) handleDevStatus( c *gin.Context, ) {
+    s := self.sessionManager.GetSession( c )
+    
+    session := self.sessionManager.session
     
     provider := session.Get( s, "provider" ).(ProviderOb)
         
@@ -157,7 +183,7 @@ func handleDevStatus( c *gin.Context, devTracker *DevTracker ) {
         clickWidth, _  := strconv.Atoi( c.PostForm("clickWidth") )
         clickHeight, _ := strconv.Atoi( c.PostForm("clickHeight") )
         addDevice( udid, "unknown", provider.Id, width, height, clickWidth, clickHeight )
-        devTracker.setDevProv( udid, provider.Id )
+        self.devTracker.setDevProv( udid, provider.Id )
         c.JSON( http.StatusOK, ok )
         return
     }

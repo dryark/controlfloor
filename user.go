@@ -4,30 +4,57 @@ import (
     "fmt"
     "net/http"
     "github.com/gin-gonic/gin"
+    cfauth "github.com/nanoscopic/controlfloor_auth"
 )
 
-func registerUserRoutes( r *gin.Engine, devTracker *DevTracker ) (*gin.RouterGroup) {
+type UserHandler struct {
+    authHandler    cfauth.AuthHandler
+    r              *gin.Engine
+    devTracker     *DevTracker
+    sessionManager *cfSessionManager
+}
+
+func NewUserHandler(
+    authHandler    cfauth.AuthHandler,
+    r              *gin.Engine,
+    devTracker     *DevTracker,
+    sessionManager *cfSessionManager,
+) *UserHandler {
+    return &UserHandler{
+        authHandler,
+        r,
+        devTracker,
+        sessionManager,
+    }
+}
+
+func (self *UserHandler) registerUserRoutes() (*gin.RouterGroup) {
+    r := self.r
+    
     fmt.Println("Registering user routes")
-    r.GET("/login", showUserLogin )
-    r.GET("/logout", handleUserLogout )
-    r.POST("/login", handleUserLogin )
+    r.GET("/login", self.showUserLogin )
+    r.GET("/logout", self.handleUserLogout )
+    r.POST("/login", self.handleUserLogin )
     uAuth := r.Group("/")
-    uAuth.Use( NeedUserAuth() )
-    uAuth.GET("/", showUserRoot )
+    uAuth.Use( self.NeedUserAuth( self.authHandler ) )
+    uAuth.GET("/", self.showUserRoot )
     uAuth.GET("/imgStream", func( c *gin.Context ) {
-        handleImgStream( c, devTracker )
+        self.handleImgStream( c )
     } )
     return uAuth
 }
 
-func NeedUserAuth() gin.HandlerFunc {
+func (self *UserHandler) NeedUserAuth( authHandler cfauth.AuthHandler ) gin.HandlerFunc {
     return func( c *gin.Context ) {
+        sCtx := self.sessionManager.GetSession( c )
         
-        sCtx := getSession( c )
-        
-        loginI := session.Get( sCtx, "user" )
+        loginI := self.sessionManager.session.Get( sCtx, "user" )
         
         if loginI == nil {
+            if authHandler != nil {
+                authHandler.UserAuth( c )
+                return
+            }
             
             c.Redirect( 302, "/login" )
             c.Abort()
@@ -41,7 +68,7 @@ func NeedUserAuth() gin.HandlerFunc {
     }
 }
 
-func showUserRoot( c *gin.Context ) {
+func (self *UserHandler) showUserRoot( c *gin.Context ) {
     var devices [] DbDevice
     err := gDb.Find( &devices )
     if err != nil {
@@ -61,21 +88,21 @@ func showUserRoot( c *gin.Context ) {
     c.HTML( http.StatusOK, "userRoot", gin.H{ "devices": output } )
 }
 
-func showUserLogin( rCtx *gin.Context ) {
+func (self *UserHandler) showUserLogin( rCtx *gin.Context ) {
     rCtx.HTML( http.StatusOK, "userLogin", gin.H{} )
 }
 
-func handleUserLogout( c *gin.Context ) {
-    s := getSession( c )
+func (self *UserHandler) handleUserLogout( c *gin.Context ) {
+    s := self.sessionManager.GetSession( c )
     
-    session.Remove( s, "user" )
-    writeSession( c )
+    self.sessionManager.session.Remove( s, "user" )
+    self.sessionManager.WriteSession( c )
     
     c.Redirect( 302, "/" )
 }
 
-func handleUserLogin( c *gin.Context ) {
-    s := getSession( c )
+func (self *UserHandler) handleUserLogin( c *gin.Context ) {
+    s := self.sessionManager.GetSession( c )
     
     /*loginI := session.Get( sCtx, "login" )
         
@@ -92,8 +119,8 @@ func handleUserLogin( c *gin.Context ) {
         //login := Login{
         //    level: 1,
         //}
-        session.Put( s, "user", "test" )
-        writeSession( c )
+        self.sessionManager.session.Put( s, "user", "test" )
+        self.sessionManager.WriteSession( c )
         
         c.Redirect( 302, "/" )
         //c.Data( http.StatusOK, "text/html", []byte("logged in") )
@@ -102,10 +129,10 @@ func handleUserLogin( c *gin.Context ) {
         fmt.Printf("login failed\n")
     }
     
-    showUserLogin( c )
+    self.showUserLogin( c )
 }
 
-func handleImgStream( c *gin.Context, devTracker *DevTracker ) {
+func (self *UserHandler) handleImgStream( c *gin.Context ) {
     //s := getSession( c )
     udid, uok := c.GetQuery("udid")
     if !uok {
@@ -127,14 +154,14 @@ func handleImgStream( c *gin.Context, devTracker *DevTracker ) {
     
     stopChan := make( chan bool )
     
-    devTracker.setVidStreamOutput( udid, &VidConn{
+    self.devTracker.setVidStreamOutput( udid, &VidConn{
         socket: conn,
         stopChan: stopChan,
     } )
     
     fmt.Printf("sending startStream to provider\n")
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
+    provId := self.devTracker.getDevProvId( udid )
+    provConn := self.devTracker.getProvConn( provId )
     provConn.startImgStream( udid )
     
     <- stopChan

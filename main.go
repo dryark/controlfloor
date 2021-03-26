@@ -7,6 +7,7 @@ import (
     "os"
     "os/exec"
     uc "github.com/nanoscopic/uclop/mod"
+    cfauth "github.com/nanoscopic/controlfloor_auth"
 )
 
 func main() {
@@ -63,14 +64,26 @@ func runMain( *uc.Cmd ) {
             
     initTemplates( r )
     r.Static("/assets", "./assets")
-    initSessionManager( r )
+    sessionManager := NewSessionManager( r )
     
     devTracker := NewDevTracker()
     
-    uAuth := registerUserRoutes( r, devTracker )
-    pAuth := registerProviderRoutes( r, devTracker )
-    registerDeviceRoutes( r, pAuth, uAuth, devTracker )
-    registerTestRoutes( r )
+    var authHandler cfauth.AuthHandler
+    if conf.auth == "mod" {
+        authHandler = cfauth.NewAuthHandler( conf.root, sessionManager )
+    }
+    
+    uh := NewUserHandler( authHandler, r, devTracker, sessionManager )
+    uAuth := uh.registerUserRoutes()
+    
+    ph := NewProviderHandler( r, devTracker, sessionManager )
+    pAuth := ph.registerProviderRoutes()
+    
+    dh := NewDevHandler( pAuth, uAuth, devTracker, sessionManager )
+    dh.registerDeviceRoutes()
+    
+    th := NewTestHandler( r, sessionManager )
+    th.registerTestRoutes()
     
     var err error
     protocol := "http"

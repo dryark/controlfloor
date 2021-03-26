@@ -8,37 +8,56 @@ import (
     "net/http"
     "sync"
     "time"
-    //ecies "github.com/ecies/go"
     ws "github.com/gorilla/websocket"
     uj "github.com/nanoscopic/ujsonin/mod"
     "github.com/gin-gonic/gin"
 )
 
-func registerProviderRoutes( r *gin.Engine, devTracker *DevTracker ) (*gin.RouterGroup) {
+type ProviderHandler struct {
+    r              *gin.Engine
+    devTracker     *DevTracker
+    sessionManager *cfSessionManager
+}
+
+func NewProviderHandler(
+    r              *gin.Engine,
+    devTracker     *DevTracker,
+    sessionManager *cfSessionManager,
+) *ProviderHandler {
+    return &ProviderHandler{
+        r,
+        devTracker,
+        sessionManager,
+    }
+}
+
+func (self *ProviderHandler) registerProviderRoutes() (*gin.RouterGroup) {
+    r := self.r
+    
     fmt.Println("Registering provider routes")
-    r.POST("/register", handleRegister )
-    r.GET("/provider/login", showProviderLogin )
-    r.GET("/provider/logout", handleProviderLogout )
-    r.POST("/provider/login", handleProviderLogin )
+    r.POST("/register", self.handleRegister )
+    r.GET("/provider/login", self.showProviderLogin )
+    r.GET("/provider/logout", self.handleProviderLogout )
+    r.POST("/provider/login", self.handleProviderLogin )
     
     pAuth := r.Group("/provider")
-    pAuth.Use( NeedProviderAuth() )
-    pAuth.GET("/", showProviderRoot )
+    pAuth.Use( self.NeedProviderAuth() )
+    pAuth.GET("/", self.showProviderRoot )
     pAuth.GET("/ws", func( c *gin.Context ) {
-        handleProviderWS( c, devTracker )
+        self.handleProviderWS( c )
     } )
     pAuth.GET("/imgStream", func( c *gin.Context ) {
-        handleImgProvider( c, devTracker )
+        self.handleImgProvider( c )
     } )
     
     return pAuth
 }
 
-func NeedProviderAuth() gin.HandlerFunc {
+func (self *ProviderHandler) NeedProviderAuth() gin.HandlerFunc {
     return func( c *gin.Context ) {
-        sCtx := getSession( c )
+        sCtx := self.sessionManager.GetSession( c )
         
-        provider, ok := session.Get( sCtx, "provider" ).(ProviderOb)
+        provider, ok := self.sessionManager.session.Get( sCtx, "provider" ).(ProviderOb)
         
         if !ok  {
             c.Redirect( 302, "/provider/login" )
@@ -56,112 +75,6 @@ func NeedProviderAuth() gin.HandlerFunc {
 var wsupgrader = ws.Upgrader{
     ReadBufferSize:  1024,
     WriteBufferSize: 1024,
-}
-
-type ProvBase interface {  
-    asText( int16 ) string
-    needsResponse() bool
-    resHandler() (func(*uj.JNode))
-}
-
-type ProvPing struct {
-    blah string
-    onRes func( *uj.JNode )
-}
-func (self *ProvPing) resHandler() (func(*uj.JNode) ) { return self.onRes }
-func (self *ProvPing) needsResponse() (bool) { return true }
-func (self *ProvPing) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"ping\"}\n", id)
-}
-
-type ProvClick struct {
-    udid string
-    x int
-    y int
-}
-func (self *ProvClick) resHandler() (func(*uj.JNode) ) { return nil }
-func (self *ProvClick) needsResponse() (bool) { return false }
-func (self *ProvClick) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"click\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
-}
-
-type ProvHardPress struct {
-    udid string
-    x int
-    y int
-}
-func (self *ProvHardPress) resHandler() (func(*uj.JNode) ) { return nil }
-func (self *ProvHardPress) needsResponse() (bool) { return false }
-func (self *ProvHardPress) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"hardPress\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
-}
-
-type ProvLongPress struct {
-    udid string
-    x int
-    y int
-}
-func (self *ProvLongPress) resHandler() (func(*uj.JNode) ) { return nil }
-func (self *ProvLongPress) needsResponse() (bool) { return false }
-func (self *ProvLongPress) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"longPress\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
-}
-
-type ProvHome struct {
-    udid string
-}
-func (self *ProvHome) resHandler() (func(*uj.JNode) ) { return nil }
-func (self *ProvHome) needsResponse() (bool) { return false }
-func (self *ProvHome) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"home\",udid:\"%s\"}\n",id,self.udid)
-}
-
-type ProvKeys struct {
-    udid string
-    keys string
-}
-func (self *ProvKeys) resHandler() (func(*uj.JNode) ) { return nil }
-func (self *ProvKeys) needsResponse() (bool) { return false }
-func (self *ProvKeys) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"keys\",udid:\"%s\",keys:\"%s\"}\n",id,self.udid,self.keys)
-}
-
-type ProvSwipe struct {
-    udid string
-    x1 int
-    y1 int
-    x2 int
-    y2 int
-}
-func (self *ProvSwipe) resHandler() (func(*uj.JNode) ) { return nil }
-func (self *ProvSwipe) needsResponse() (bool) { return false }
-func (self *ProvSwipe) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"swipe\",udid:\"%s\",x1:%d,y1:%d,x2:%d,y2:%d}\n",id,self.udid,self.x1,self.y1,self.x2,self.y2)
-}
-
-type ProvStartStream struct {
-    udid string
-}
-func (self *ProvStartStream) resHandler() (func(*uj.JNode) ) { return nil }
-func (self *ProvStartStream) needsResponse() (bool) { return false }
-func (self *ProvStartStream) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"startStream\",udid:\"%s\"}\n",id,self.udid)
-}
-
-type ProvStopStream struct {
-    udid string
-}
-
-func (self *ProvStopStream) resHandler() (func(*uj.JNode) ) {
-    return nil
-}
-
-func (self *ProvStopStream) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"stopStream\",udid:\"%s\"}\n",id,self.udid)
-}
-
-func (self *ProvStopStream) needsResponse() (bool) {
-    return false
 }
 
 type ReqTracker struct {
@@ -203,6 +116,7 @@ func (self *ReqTracker) sendReq( req ProvBase ) (error) {
     err := self.conn.WriteMessage( ws.TextMessage, []byte(reqText) )
     return err
 }
+
 func (self *ReqTracker) processResp( msgType int, reqText []byte ) {
     fmt.Printf( "received %s\n", string(reqText) )
     
@@ -236,92 +150,7 @@ func (self *ReqTracker) processResp( msgType int, reqText []byte ) {
     // respond to the original request if needed
 }
 
-type ProviderConnection struct {
-    provChan chan ProvBase
-    reqTracker *ReqTracker
-}
-
-func NewProviderConnection( provChan chan ProvBase ) (*ProviderConnection) {
-    self := &ProviderConnection{
-        provChan: provChan,
-        reqTracker: NewReqTracker(),
-    }
-    
-    return self
-}
-
-func (self *ProviderConnection) doPing() {
-    ping := &ProvPing{
-        onRes: func( root *uj.JNode ) {
-            text := root.Get("text").String()
-            fmt.Printf("pong text %s\n", text )
-        },
-    }
-    self.provChan <- ping
-}
-
-func (self *ProviderConnection) doClick( udid string, x int, y int ) {
-    click := &ProvClick{
-        udid: udid,
-        x: x,
-        y: y,
-    }
-    self.provChan <- click
-}
-
-func (self *ProviderConnection) doHardPress( udid string, x int, y int ) {
-    click := &ProvHardPress{
-        udid: udid,
-        x: x,
-        y: y,
-    }
-    self.provChan <- click
-}
-
-func (self *ProviderConnection) doLongPress( udid string, x int, y int ) {
-    click := &ProvLongPress{
-        udid: udid,
-        x: x,
-        y: y,
-    }
-    self.provChan <- click
-}
-
-func (self *ProviderConnection) doHome( udid string ) {
-    home := &ProvHome{
-        udid: udid,
-    }
-    self.provChan <- home
-}
-
-func (self *ProviderConnection) doKeys( udid string, keys string ) {
-    action := &ProvKeys{
-        udid: udid,
-        keys: keys,
-    }
-    self.provChan <- action
-}
-
-func (self *ProviderConnection) doSwipe( udid string, x1 int, y1 int, x2 int, y2 int ) {
-    swipe := &ProvSwipe{
-        udid: udid,
-        x1: x1,
-        y1: y1,
-        x2: x2,
-        y2: y2,
-    }
-    self.provChan <- swipe
-}
-
-func (self *ProviderConnection) startImgStream( udid string ) {
-    self.provChan <- &ProvStartStream{ udid: udid }
-}
-
-func (self *ProviderConnection) stopImgStream( udid string ) {
-    self.provChan <- &ProvStopStream{ udid: udid }
-}
-
-func handleImgProvider( c *gin.Context, devTracker *DevTracker ) {
+func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
     //s := getSession( c )
     
     //provider := session.Get( s, "provider" ).(ProviderOb)
@@ -337,8 +166,8 @@ func handleImgProvider( c *gin.Context, devTracker *DevTracker ) {
     
     //dev := getDevice( udid )
     
-    provId := devTracker.getDevProvId( udid )
-    provConn := devTracker.getProvConn( provId )
+    provId := self.devTracker.getDevProvId( udid )
+    provConn := self.devTracker.getProvConn( provId )
     
     writer := c.Writer
     req := c.Request
@@ -348,7 +177,7 @@ func handleImgProvider( c *gin.Context, devTracker *DevTracker ) {
         return
     }
     
-    vidConn := devTracker.getVidStreamOutput( udid )
+    vidConn := self.devTracker.getVidStreamOutput( udid )
     outSocket := vidConn.socket
     
     go func() {
@@ -377,10 +206,10 @@ func handleImgProvider( c *gin.Context, devTracker *DevTracker ) {
     if outSocket != nil { outSocket.Close() }
 }
 
-func handleProviderWS( c *gin.Context, devTracker *DevTracker ) {
-    s := getSession( c )
+func (self *ProviderHandler) handleProviderWS( c *gin.Context ) {
+    s := self.sessionManager.GetSession( c )
     
-    provider := session.Get( s, "provider" ).(ProviderOb)
+    provider := self.sessionManager.session.Get( s, "provider" ).(ProviderOb)
     
     writer := c.Writer
     req := c.Request
@@ -392,7 +221,7 @@ func handleProviderWS( c *gin.Context, devTracker *DevTracker ) {
 
     provChan := make( chan ProvBase )
     provConn := NewProviderConnection( provChan )
-    devTracker.setProvConn( provider.Id, provConn )
+    self.devTracker.setProvConn( provider.Id, provConn )
     reqTracker := provConn.reqTracker
     reqTracker.conn = conn
     
@@ -425,7 +254,7 @@ func handleProviderWS( c *gin.Context, devTracker *DevTracker ) {
         }        
     }
     
-    devTracker.clearProvConn( provider.Id )
+    self.devTracker.clearProvConn( provider.Id )
     fmt.Printf("lost ws connection\n")
 }
 
@@ -439,7 +268,7 @@ func randHex() (string) {
 	return hex.EncodeToString( b )
 }
 
-func handleRegister( c *gin.Context ) {
+func (self *ProviderHandler) handleRegister( c *gin.Context ) {
     pass := c.PostForm("regPass")
     
     conf := getConf()
@@ -473,8 +302,8 @@ type ProviderOb struct {
     Id int64
 }
 
-func handleProviderLogin( c *gin.Context ) {
-    s := getSession( c )
+func (self *ProviderHandler) handleProviderLogin( c *gin.Context ) {
+    s := self.sessionManager.GetSession( c )
     
     user := c.PostForm("user")
     pass := c.PostForm("pass")
@@ -491,11 +320,11 @@ func handleProviderLogin( c *gin.Context ) {
     if pass == provider.Password {
         fmt.Printf("provider login ok\n")
         
-        session.Put( s, "provider", &ProviderOb{
+        self.sessionManager.session.Put( s, "provider", &ProviderOb{
             User: user,
             Id: provider.Id,
         } )
-        writeSession( c )
+        self.sessionManager.WriteSession( c )
         
         c.Redirect( 302, "/provider/" )
         return
@@ -505,22 +334,22 @@ func handleProviderLogin( c *gin.Context ) {
         return
     }
     
-    showProviderLogin( c )
+    self.showProviderLogin( c )
 }
 
-func handleProviderLogout( c *gin.Context ) {
-    s := getSession( c )
+func (self *ProviderHandler) handleProviderLogout( c *gin.Context ) {
+    s := self.sessionManager.GetSession( c )
     
-    session.Remove( s, "provider" )
-    writeSession( c )
+    self.sessionManager.session.Remove( s, "provider" )
+    self.sessionManager.WriteSession( c )
     
     c.Redirect( 302, "/" )
 }
 
-func showProviderLogin( rCtx *gin.Context ) {
+func (self *ProviderHandler) showProviderLogin( rCtx *gin.Context ) {
     rCtx.HTML( http.StatusOK, "providerLogin", gin.H{} )
 }
 
-func showProviderRoot( c *gin.Context ) {
+func (self *ProviderHandler) showProviderRoot( c *gin.Context ) {
     c.HTML( http.StatusOK, "providerRoot", gin.H{} )
 } 

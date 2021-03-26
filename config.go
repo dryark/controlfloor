@@ -4,7 +4,7 @@ import (
     "fmt"
     "io/ioutil"
     "os"
-    uj "github.com/nanoscopic/ujsonin/mod"
+    uj "github.com/nanoscopic/ujsonin/v2/mod"
     log "github.com/sirupsen/logrus"
 )
 
@@ -17,6 +17,8 @@ type Config struct {
     https bool
     crt string
     key string
+    auth string
+    root uj.JNode
 }
 
 func (self *Config) String() string {
@@ -27,7 +29,7 @@ func (self *Config) String() string {
     return fmt.Sprintf("Listen: %s\nHTTPS: %s\n", self.listen, https )
 }
 
-func GetStr( root *uj.JNode, path string ) string {
+func GetStr( root uj.JNode, path string ) string {
     node := root.Get( path )
     if node == nil {
         fmt.Fprintf( os.Stderr, "%s is not set in either config.json or default.json" )
@@ -35,7 +37,7 @@ func GetStr( root *uj.JNode, path string ) string {
     }
     return node.String()
 }
-func GetBool( root *uj.JNode, path string ) bool {
+func GetBool( root uj.JNode, path string ) bool {
     node := root.Get( path )
     if node == nil {
         fmt.Fprintf( os.Stderr, "%s is not set in either config.json or default.json" )
@@ -48,6 +50,7 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
     config := Config{}
     
     root := loadConfig( configPath, defaultsPath )
+    config.root = root
     
     config.listen = GetStr( root, "listen" )
     config.https = GetBool( root, "https" )
@@ -55,11 +58,12 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
         config.key = GetStr( root, "key" )
         config.crt = GetStr( root, "crt" )
     }
+    config.auth = GetStr( root, "auth" )
     
     return &config
 }
 
-func loadConfig( configPath string, defaultsPath string ) (*uj.JNode) {
+func loadConfig( configPath string, defaultsPath string ) uj.JNode {
     fh1, serr1 := os.Stat( defaultsPath )
     if serr1 != nil {
         log.WithFields( log.Fields{

@@ -3,4 +3,8 @@
     listen: ":8080"
     
     https: true
+    
+    // "builtin" uses builtin database based auth
+    // "mod" additionally checks for controlfloor_auth mod based auth
+    auth: "builtin"
 }

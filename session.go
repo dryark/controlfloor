@@ -13,17 +13,27 @@ func init() {
 	gob.Register(ProviderOb{})
 }
 
-var session *scs.SessionManager
-
-func initSessionManager( r *gin.Engine ) {
-    session = scs.New()
-    
-    r.Use( Sessions() )
-    //db, _ := sql.Open( "sqlite3", "sessions.db" )
-    //session.Store = sqlite3store.New( db )
+type cfSessionManager struct {
+    session *scs.SessionManager
 }
 
-func Sessions() gin.HandlerFunc {
+func (self *cfSessionManager) GetSCSSessionManager() *scs.SessionManager {
+    return self.session
+}
+
+func NewSessionManager( r *gin.Engine ) *cfSessionManager {
+    self := &cfSessionManager{
+        session: scs.New(),
+    }
+    
+    r.Use( self.Sessions() )
+    //db, _ := sql.Open( "sqlite3", "sessions.db" )
+    //session.Store = sqlite3store.New( db )
+    
+    return self
+}
+
+func (self *cfSessionManager) Sessions() gin.HandlerFunc {
     return func( c *gin.Context ) {
         //fmt.Printf("Sessions")
         
@@ -31,7 +41,7 @@ func Sessions() gin.HandlerFunc {
         
         token, _ := c.Cookie( "session" )
         
-        ctx, _ := session.Load( r.Context(), token )
+        ctx, _ := self.session.Load( r.Context(), token )
         if ctx == nil {
             fmt.Println("no session")
         } else {
@@ -43,18 +53,18 @@ func Sessions() gin.HandlerFunc {
     }
 }
 
-func getSession( rCtx *gin.Context ) ( context.Context ) {
+func (self *cfSessionManager) GetSession( rCtx *gin.Context ) context.Context {
     ctx, _ := rCtx.Get("session")
     ctx2 := ctx.(context.Context)
     return ctx2
 }
 
-func writeSession( c *gin.Context ) {
+func (self *cfSessionManager) WriteSession( c *gin.Context ) {
     sI, _ := c.Get("session")
     
     s := sI.(context.Context)
     
-    status := session.Status( s )
+    status := self.session.Status( s )
         
     if status == scs.Unmodified {
         return
@@ -67,7 +77,7 @@ func writeSession( c *gin.Context ) {
     
     switch status {
     case scs.Modified:
-        token, expiry, _ = session.Commit( s )
+        token, expiry, _ = self.session.Commit( s )
         //fmt.Println("session committed")
         //cExpires = time.Unix( expiry.Unix() + 1, 0 )
         cMaxAge  = int( time.Until( expiry ).Seconds() + 1 )
@@ -82,7 +92,7 @@ func writeSession( c *gin.Context ) {
         token,
         cMaxAge,
         "/",
-        session.Cookie.Domain,
-        session.Cookie.Secure,
-        session.Cookie.HttpOnly )
+        self.session.Cookie.Domain,
+        self.session.Cookie.Secure,
+        self.session.Cookie.HttpOnly )
 }
