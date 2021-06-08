@@ -24,13 +24,21 @@
         }
     </style>
     <link rel="stylesheet"	href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css"	/>
+    <script>
+        function go() {
+            var el = document.getElementById('user');
+            el.focus();
+            el.select();
+        }
+    </script>
 </head>
+<body onload='go()'>
 <form method='post'>
     <table style="margin-left:auto; margin-right:auto; position:relative; top: 300px" cellpadding=15 cellspacing=0>
         <tr>
             <td class='name'><i class="mdi mdi-account"></i>User</a></td>
             <td>
-                <input name='user' type='text'>
+                <input id='user' name='user' type='text'>
             </td>
         </tr>
         <tr>
@@ -45,3 +53,4 @@
             </td>
         </tr>
 </form>
+</body>

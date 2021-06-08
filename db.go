@@ -139,7 +139,7 @@ func updateDeviceInfo( udid string, info string, pId int64 ) {
         JsonInfo: info,
         ProviderId: pId,
     }
-    _, err := gDb.ID( udid ).Cols("JsonInfo", "Name", "ProviderId" ).Update( &dev )
+    _, err := gDb.ID( udid ).Update( &dev ) // Cols("JsonInfo", "Name", "ProviderId" )
     if err != nil {
         panic( err )
     }

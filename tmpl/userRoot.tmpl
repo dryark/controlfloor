@@ -8,15 +8,157 @@
 		<link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css"	/>
 		<link rel="stylesheet"	href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
 		<link rel="stylesheet" href="/assets/css/styles.css" />
+		<link rel="stylesheet" href="/assets/css/table.css" />
 		<link rel="stylesheet" href="/assets/css/sidebar.css" />
+		
+		<!--<link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css" />-->
+		<link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css" />
+		<style>
+		  div.dt-button-collection {
+		    width: auto;
+		  }
+		  td.hover {
+		    background-color: #bbbbbb !important;
+		    cursor: pointer;
+		  }
+		</style>
+		
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.slim.min.js"></script>
+		<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+		<script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.colVis.min.js"></script>
+		<script>
+		  function go() {
+		    var tbl = $("#devices")
+ 
+		    for( var i=0;i<devices_data.length;i++ ) {
+		      var device = devices_data[i];
+		      var json = device.JsonInfo;
+		      if( json ) {
+		        console.log(json);
+		        json = json.replace(',}','}');
+		        device.JsonInfo = JSON.parse( json );
+		        device.jsonRaw = json;
+		      } else {
+		        device.jsonRaw = "";
+		        device.JsonInfo = {
+		          ModelNumber: "",
+		          HardwareModel: "",
+		          ArtworkDeviceProductDescription:"unknown"
+		        };
+		      }
+		    }
+		    
+        var ob = tbl.DataTable ({
+            dom: 'Bfrtip',
+            "data" : devices_data,
+            "columns" : [
+                {
+                  data: "Udid",
+                  title: "UDID"
+                },
+                {
+                  data: "Name",
+                  title: "Name",
+                },
+                {
+                  data: "jsonRaw",
+                  title: "Raw Device Info",
+                  visible: false,
+                },
+                {
+                  data: "JsonInfo.ModelNumber",
+                  title: "Model Number",
+                  visible: false
+                },
+                {
+                  data: "JsonInfo.HardwareModel",
+                  title: "Hardware Model",
+                  visible: false
+                },
+                {
+                  data: "JsonInfo.ArtworkDeviceProductDescription",
+                  title: "Device Type"
+                }
+            ],
+            buttons: [
+              'colvis'
+            ],
+            paging: false,
+            info: false,
+        });
+        
+        $(document).on({
+          mouseenter: function () {
+            trIndex = $(this).index()+1;
+            $("table.dataTable").each(function(index) {
+            $(this).find("tr:eq("+trIndex+")").each(function(index) {
+            $(this).find("td").addClass("hover");
+            });
+            });
+          },
+          mouseleave: function () {
+            trIndex = $(this).index()+1;
+            $("table.dataTable").each(function(index) {
+            $(this).find("tr:eq("+trIndex+")").each(function(index) {
+            $(this).find("td").removeClass("hover");
+            });
+            });
+          },
+          click: function() {
+            var row = ob.row($(this)).data();
+            console.log( row );
+            document.location.href = "/devInfo?udid=" + row.Udid;
+          }
+        }, ".dataTables_wrapper tr");
+        
+        /*new $.fn.dataTable.Buttons( ob, {
+            buttons: [
+                'colvis'
+            ]
+        } );
+        ob.buttons().container()
+          .appendTo( $('#info') );*/
+		  }
+		</script>
 	</head>
-	<body>
+	<body onload="go()">
 		{{template "sidebar" dict "udid" "" }}
-		<div class="main">
-		    <table cellpadding=4 cellspacing=0 border=1>
+		<div class="main" style="z-index: 0; position: relative">
+		    <!--<table cellpadding=4 cellspacing=0 border=1>
 		    <tr><th>Name</th><th>UDID</th><th>Provider ID</th></tr>
 		    {{ html .devices }}
-		    </table>
+		    </table>-->
+		    
+		    <!--<table id="example" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>UDID</th>
+                    <th>Width</th>
+                    <th>Height</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Tiger Nixon</td>
+                    <td>System Architect</td>
+                    <td>Edinburgh</td>
+                    <td>61</td>
+                    <td>2011/04/25</td>
+                    <td>$320,800</td>
+                </tr>
+            </tbody>
+        </table>-->
+        
+        <script>
+        var devices_data = [
+          {{ json .devices_json }}
+        ];
+        </script>
+        <div id="info"></div><br>
+        <table id="devices" class="display cell-border" style="width:100%;"></table>
+		    
 		</div>
 	</body>
 </html>

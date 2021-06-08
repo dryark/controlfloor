@@ -13,11 +13,31 @@
 	<body>
 		{{template "sidebar" dict "udid" .udid }}
 		<div class="main">
-		    <table cellpadding=4 cellspacing=0 border=1>
-		    Device Name: {{ html .name }}<br>
-		    Device UDID: {{ html .udid }}<br>
-		    Click Width: {{ html .clickWidth }}<br>
-		    Click Height: {{ html .clickHeight }}<br>
+		    <table cellpadding=6 cellspacing=0 border=1>
+		      <tr>
+		        <td>Name</td>
+		        <td>{{ html .name }}</td>
+		      </tr>
+		      <tr>
+		        <td>UDID</td>
+		        <td>{{ html .udid }}</td>
+		      </tr>
+		      <tr>
+		        <td>Click Dimensions</td>
+		        <td>{{ html .clickWidth }}x{{ html .clickHeight }}</td>
+		      </tr>
+		      <tr>
+		        <td>Video Dimensions</td>
+		        <td>{{ html .vidWidth }}x{{ html .vidHeight }}</td>
+		      </tr>
+		      <tr>
+		        <td>Provider</td>
+		        <td>{{ html .provider }}</td>
+		      </tr>
+		      <tr>
+		        <td>Info</td>
+		        <td>{{ html .info}}</td>
+		      </tr>
 		    </table>
 		</div>
 	</body>

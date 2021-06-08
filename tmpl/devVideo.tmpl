@@ -31,6 +31,8 @@
   var udid="{{ html .udid }}";
   var clickWid={{ html .clickWidth }};
   var clickHeg={{ html .clickHeight }};
+  var vidWid={{ html .vidWidth }};
+  var vidHeg={{ html .vidHeight }};
   var base = document.location.protocol + '//' + document.location.host;
   
   function req( type, url, handler, body ) {
@@ -51,25 +53,25 @@
     else xhr.send();
   }
   function clickAt( pos ) {
-    var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
-    var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
+    var x = Math.floor( (pos[0]/(vidWid/2))*clickWid ); 
+    var y = Math.floor( (pos[1]/(vidHeg/2))*clickHeg );
     req( 'POST', base + '/devClick', function() {}, { udid, x, y } );    
   }
   function doHardPress( pos ) {
-    var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
-    var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
+    var x = Math.floor( (pos[0]/(vidWid/2))*clickWid ); 
+    var y = Math.floor( (pos[1]/(vidHeg/2))*clickHeg );
     req( 'POST', base + '/devHardPress', function() {}, { udid, x, y } );    
   }
   function doLongPress( pos ) {
-    var x = Math.floor( (pos[0]/(750/2))*clickWid ); 
-    var y = Math.floor( (pos[1]/(1334/2))*clickHeg );
+    var x = Math.floor( (pos[0]/(vidWid/2))*clickWid ); 
+    var y = Math.floor( (pos[1]/(vidHeg/2))*clickHeg );
     req( 'POST', base + '/devLongPress', function() {}, { udid, x, y } );    
   }
   function swipe( pos1, pos2 ) {
-    var x1 = Math.floor( (pos1[0]/(750/2))*clickWid ); 
-    var y1 = Math.floor( (pos1[1]/(1334/2))*clickHeg );
-    var x2 = Math.floor( (pos2[0]/(750/2))*clickWid ); 
-    var y2 = Math.floor( (pos2[1]/(1334/2))*clickHeg );
+    var x1 = Math.floor( (pos1[0]/(vidWid/2))*clickWid ); 
+    var y1 = Math.floor( (pos1[1]/(vidHeg/2))*clickHeg );
+    var x2 = Math.floor( (pos2[0]/(vidWid/2))*clickWid ); 
+    var y2 = Math.floor( (pos2[1]/(vidHeg/2))*clickHeg );
     req( 'POST', base + '/devSwipe', function() {}, { udid, x1, y1, x2, y2 } );    
   }
   var keyqueue = [];
@@ -102,8 +104,13 @@
     var home   = getel("home");
     var hardPress = getel("hardPress");
     var longPress = getel("longPress");
+    var under = getel("under");
     var ws;
     var pos1;
+    
+    canvas.width = vidWid/2;
+    canvas.height = vidHeg/2;
+    under.width = vidWid/2;
     
     home.onclick = function( event ) {
       req( 'POST', '/devHome', function() {}, { udid } );  
@@ -184,7 +191,7 @@
           var image = new Image();
           var url;
           image.onload = function() {
-            ctx.drawImage(image, 0, 0, 750/2, 1334/2 );
+            ctx.drawImage(image, 0, 0, vidWid/2, vidHeg/2 );
             URL.revokeObjectURL( url );
           };
           image.onerror = function( e ) {
@@ -210,7 +217,7 @@
     {{template "sidebar" dict "udid" .udid }}
     <div class="main">
         <canvas id="canvas" width="375" height="667"></canvas><br>
-        <div style="width:375px; font-size: 32px">
+        <div style="width:375px; font-size: 32px" id="under">
             <center>
                 <i id='home' class="mdi mdi-home"></i>
                 <i id='hardPress' class="mdi mdi-anvil mInactive"></i>

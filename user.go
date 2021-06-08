@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "net/http"
+    "encoding/json"
     "github.com/gin-gonic/gin"
     cfauth "github.com/nanoscopic/controlfloor_auth"
 )
@@ -82,10 +83,32 @@ func (self *UserHandler) showUserRoot( c *gin.Context ) {
                 <td>%s</td>
                 <td><a href="/devInfo?udid=%s">%s</a></td>
                 <td>%d</td>
-            </tr>`, device.Name, device.Udid, device.Udid, device.ProviderId )
+                <td>%s</td>
+                <td>%d</td><td>%d</td><td>%d</td><td>%d</td>
+            </tr>`,
+            device.Name,
+            device.Udid, device.Udid,
+            device.ProviderId,
+            device.JsonInfo,
+            device.Width,
+            device.Height,
+            device.ClickWidth,
+            device.ClickHeight,
+        )
+        // also Width, Height, ClickWidth, and ClickHeight
     }
     
-    c.HTML( http.StatusOK, "userRoot", gin.H{ "devices": output } )
+    jsont := ""
+    for _, device := range devices {
+      t, _ := json.Marshal( device )
+      jsont += string(t) + ","
+    }
+    jsont = jsont[:len( jsont )-1]
+    
+    c.HTML( http.StatusOK, "userRoot", gin.H{
+      "devices": output,
+      "devices_json": jsont,
+    } )
 }
 
 func (self *UserHandler) showUserLogin( rCtx *gin.Context ) {

@@ -21,6 +21,10 @@ func toHTML( s string ) template.HTML {
     return template.HTML( s )
 }
 
+func toJSON( s string ) template.JS {
+    return template.JS( s )
+}
+
 func dictFunc(values ...interface{}) (map[string]interface{}, error) {
     if len(values)%2 != 0 {
         return nil, errors.New("invalid dict call")
@@ -64,6 +68,7 @@ func loadTemplatesFromDir( dir string ) (*template.Template, error) {
         "html": toHTML,
         "dict": dictFunc,
         "default": tdefault,
+        "json": toJSON,
     }
     t = t.Funcs( funcMap )
     

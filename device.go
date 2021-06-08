@@ -1,6 +1,7 @@
 package main
 
 import (
+    "encoding/json"
     "fmt"
     "net/http"
     "strconv"
@@ -80,11 +81,23 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
         return
     }
     
+    info := dev.JsonInfo
+    if info != "" {
+      var obj map[string]interface{}
+      json.Unmarshal([]byte(info), &obj)
+      infoBytes, _ := json.MarshalIndent(obj, "<br>", " &nbsp; &nbsp; &nbsp; ")
+      info = string( infoBytes )
+    }    
+    
     c.HTML( http.StatusOK, "devInfo", gin.H{
         "udid": udid,
-        "name": dev.Name,
-        "clickWidth": dev.ClickWidth,
+        "name":        dev.Name,
+        "clickWidth":  dev.ClickWidth,
         "clickHeight": dev.ClickHeight,
+        "vidWidth":    dev.Width,
+        "vidHeight":   dev.Height,
+        "provider":    dev.ProviderId,
+        "info":        info,
     } )
 }
 
@@ -153,8 +166,10 @@ func (self *DevHandler) showDevVideo( c *gin.Context ) {
     
     c.HTML( http.StatusOK, "devVideo", gin.H{
         "udid": udid,
-        "clickWidth": dev.ClickWidth,
+        "clickWidth":  dev.ClickWidth,
         "clickHeight": dev.ClickHeight,
+        "vidWidth":    dev.Width,
+        "vidHeight":   dev.Height,
     } )
 }
 
