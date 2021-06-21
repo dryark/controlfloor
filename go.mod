@@ -9,7 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/gorilla/websocket v1.4.2
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
-	github.com/nanoscopic/controlfloor_auth v1.0.1
+	github.com/nanoscopic/controlfloor_auth v1.1.0
 	github.com/nanoscopic/uclop v1.1.0
 	github.com/nanoscopic/ujsonin v1.13.0
 	github.com/nanoscopic/ujsonin/v2 v2.0.5

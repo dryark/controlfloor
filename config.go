@@ -32,7 +32,7 @@ func (self *Config) String() string {
 func GetStr( root uj.JNode, path string ) string {
     node := root.Get( path )
     if node == nil {
-        fmt.Fprintf( os.Stderr, "%s is not set in either config.json or default.json" )
+        fmt.Fprintf( os.Stderr, "%s is not set in either config.json or default.json", path )
         os.Exit(1)
     }
     return node.String()
@@ -40,14 +40,16 @@ func GetStr( root uj.JNode, path string ) string {
 func GetBool( root uj.JNode, path string ) bool {
     node := root.Get( path )
     if node == nil {
-        fmt.Fprintf( os.Stderr, "%s is not set in either config.json or default.json" )
+        fmt.Fprintf( os.Stderr, "%s is not set in either config.json or default.json", path )
         os.Exit(1)
     }
     return node.Bool()
 }
 
 func NewConfig( configPath string, defaultsPath string ) (*Config) {
-    config := Config{}
+    config := Config{
+        auth: "builtin",
+    }
     
     root := loadConfig( configPath, defaultsPath )
     config.root = root
@@ -58,7 +60,11 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
         config.key = GetStr( root, "key" )
         config.crt = GetStr( root, "crt" )
     }
-    config.auth = GetStr( root, "auth" )
+    authNode := config.root.Get("auth")
+    
+    if authNode != nil {
+        config.auth = GetStr( authNode, "type" )
+    }
     
     return &config
 }

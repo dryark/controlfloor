@@ -125,28 +125,29 @@ func (self *UserHandler) handleUserLogout( c *gin.Context ) {
 }
 
 func (self *UserHandler) handleUserLogin( c *gin.Context ) {
+    if self.authHandler != nil {
+        success := self.authHandler.UserLogin( c )
+        if success {
+            c.Redirect( 302, "/" )
+        } else {
+            fmt.Printf("login failed\n")
+            self.showUserLogin( c )
+        }
+        return
+    }
+    
     s := self.sessionManager.GetSession( c )
     
-    /*loginI := session.Get( sCtx, "login" )
-        
-    if loginI == nil {
-        showLogin
-        return
-    }*/
     user := c.PostForm("user")
     pass := c.PostForm("pass")
     
     if user == "ok" && pass == "ok" {
         fmt.Printf("login ok\n")
         
-        //login := Login{
-        //    level: 1,
-        //}
         self.sessionManager.session.Put( s, "user", "test" )
         self.sessionManager.WriteSession( c )
         
         c.Redirect( 302, "/" )
-        //c.Data( http.StatusOK, "text/html", []byte("logged in") )
         return
     } else {
         fmt.Printf("login failed\n")

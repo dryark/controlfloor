@@ -1,4 +1,20 @@
 {
     crt: "server.crt"
     key: "server.key"
+    auth: {
+        dummy: {
+            testparam: "ok"
+            testuser: "test"
+            users: [
+                {
+                    userName: "ok"
+                    password: "ok"
+                },
+                {
+                    userName: "ok2"
+                    password: "ok"
+                }
+            ]
+        }
+    }
 }
