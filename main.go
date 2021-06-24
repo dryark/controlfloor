@@ -66,7 +66,7 @@ func runMain( *uc.Cmd ) {
     r.Static("/assets", "./assets")
     sessionManager := NewSessionManager( r )
     
-    devTracker := NewDevTracker()
+    devTracker := NewDevTracker( conf )
     
     var authHandler cfauth.AuthHandler
     if conf.auth == "mod" {

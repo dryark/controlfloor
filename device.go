@@ -5,6 +5,7 @@ import (
     "fmt"
     "net/http"
     "strconv"
+    "math/rand"
     "github.com/gin-gonic/gin"
 )
 
@@ -57,6 +58,8 @@ func (self *DevHandler) registerDeviceRoutes() {
     } )
     
     uAuth.GET("/devVideo", self.showDevVideo )
+    uAuth.GET("/devKick", self.devKick )
+    uAuth.POST("/devVideoStop", self.stopDevVideo )
     
     uAuth.GET("/devPing", self.handleDevPing )
 }
@@ -89,6 +92,18 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
       info = string( infoBytes )
     }    
     
+    stat := self.devTracker.getDevStatus( udid )
+    wdaUp := "-"
+    videoUp := "-"
+    if stat != nil {
+        wdaUp = "up"
+        if !stat.wda { wdaUp = "down" }
+        videoUp = "up"
+        if !stat.video { videoUp = "down" }
+    }
+    
+    provId := self.devTracker.getDevProvId( udid )
+    
     c.HTML( http.StatusOK, "devInfo", gin.H{
         "udid": udid,
         "name":        dev.Name,
@@ -96,8 +111,10 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
         "clickHeight": dev.ClickHeight,
         "vidWidth":    dev.Width,
         "vidHeight":   dev.Height,
-        "provider":    dev.ProviderId,
+        "provider":    provId,
         "info":        info,
+        "wdaStatus":   wdaUp,
+        "videoStatus": videoUp,
     } )
 }
 
@@ -153,6 +170,33 @@ func (self *DevHandler) handleKeys( c *gin.Context ) {
 func (self *DevHandler) handleDevPing( c *gin.Context ) {
 }
 
+func (self *DevHandler) devKick( c *gin.Context ) {
+    udid, uok := c.GetQuery("udid")
+    if !uok {
+        c.HTML( http.StatusOK, "error", gin.H{
+            "text": "no uuid set",
+        } )
+        return
+    }
+    
+    self.devTracker.msgClient( udid, ClientMsg{ msgType: CMKick, msg: "{\"type\":\"kick\"}" } )
+    
+    deleteReservation( udid )
+    
+    c.Redirect( 302, "/devVideo?udid=" + udid )
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandStringBytes(n int) string {
+    b := make([]byte, n)
+    for i := range b {
+        b[i] = letterBytes[rand.Intn(len(letterBytes))]
+    }
+    return string(b)
+}
+
+
 func (self *DevHandler) showDevVideo( c *gin.Context ) {
     udid, uok := c.GetQuery("udid")
     if !uok {
@@ -164,12 +208,60 @@ func (self *DevHandler) showDevVideo( c *gin.Context ) {
     
     dev := getDevice( udid )
     
+    sCtx := self.sessionManager.GetSession( c )
+    user := self.sessionManager.session.Get( sCtx, "user" ).(string)
+    fmt.Printf("Reserving device %s for %s\n", udid, user )
+    rid := RandStringBytes( 10 )
+    success := addReservation( udid, user, rid )
+    
+    if !success {
+        rv := getReservation( udid )
+        
+        if rv.User != user {
+            c.HTML( http.StatusOK, "devReserved", gin.H{
+                "udid": udid,
+                "user": rv.User,
+            } )
+            return
+        }
+        fmt.Printf("Renewing reservation\n")
+        deleteReservation( udid )
+        addReservation( udid, user, rid )
+    }
+    
     c.HTML( http.StatusOK, "devVideo", gin.H{
         "udid": udid,
         "clickWidth":  dev.ClickWidth,
         "clickHeight": dev.ClickHeight,
         "vidWidth":    dev.Width,
         "vidHeight":   dev.Height,
+        "rid": rid,
+        "idleTimeout": self.devTracker.config.idleTimeout,
+    } )
+}
+
+func (self *DevHandler) stopDevVideo( c *gin.Context ) {
+    udid, uok := c.GetQuery("udid")
+    if !uok {
+        c.HTML( http.StatusOK, "error", gin.H{
+            "text": "no uuid set",
+        } )
+        return
+    }
+    rid, rok := c.GetQuery("rid")
+    if !rok {
+        c.HTML( http.StatusOK, "error", gin.H{
+            "text": "no rid set",
+        } )
+        return
+    }
+    
+    fmt.Printf("dev video stopped for udid: %s\n", udid )
+    
+    deleteReservationWithRid( udid, rid )
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
     } )
 }
 
@@ -211,16 +303,31 @@ func (self *DevHandler) handleDevStatus( c *gin.Context, ) {
     }
     if status == "wdaStarted" {
         fmt.Printf("WDA started for %s\n", udid )
+        self.devTracker.setDevStatus( udid, "wda", true )
         c.JSON( http.StatusOK, ok )
         return
     }
     if status == "wdaStopped" {
         fmt.Printf("WDA stopped for %s\n", udid )
+        self.devTracker.setDevStatus( udid, "wda", false )
+        c.JSON( http.StatusOK, ok )
+        return
+    }
+    if status == "videoStarted" {
+        fmt.Printf("Video started for %s\n", udid )
+        self.devTracker.setDevStatus( udid, "video", true )
+        c.JSON( http.StatusOK, ok )
+        return
+    }
+    if status == "videoStopped" {
+        fmt.Printf("Video stopped for %s\n", udid )
+        self.devTracker.setDevStatus( udid, "video", false )
         c.JSON( http.StatusOK, ok )
         return
     }
     if status == "provisionStopped" {
         fmt.Printf("Provision stopped for %s\n", udid )
+        self.devTracker.clearDevProv( udid )
         c.JSON( http.StatusOK, ok )
         return
     }

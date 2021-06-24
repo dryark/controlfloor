@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "os"
+    "time"
     _ "github.com/mattn/go-sqlite3"
     "xorm.io/xorm"
     uj "github.com/nanoscopic/ujsonin/v2/mod"
@@ -24,9 +25,20 @@ type DbDevice struct {
     Height      int
     ClickWidth  int
     ClickHeight int
+    Ready       string `xorm:"-"`
 }
 func (DbDevice) TableName() string {
     return "device"
+}
+
+type DbReservation struct {
+    Udid  string `xorm:"pk"`
+    User  string
+    Rid   string
+    Start time.Time
+}
+func (DbReservation) TableName() string{
+    return "reservation"
 }
 
 type DbProvider struct {
@@ -61,7 +73,7 @@ func openDb() ( *xorm.Engine ) {
         return engine
     }
             
-    err = engine.Sync2( new( DbDevice ), new( DbProvider ), new( DbConf ) )
+    err = engine.Sync2( new( DbDevice ), new( DbProvider ), new( DbConf ), new( DbReservation ) )
     if err != nil {
     }
     
@@ -82,6 +94,54 @@ func getProvider( username string ) (*DbProvider) {
         return nil
     }
     return &provider
+}
+
+func getReservation( udid string ) (*DbReservation){
+    rv := DbReservation{
+        Udid: udid,
+    }
+    has, err := gDb.Get( &rv )
+    if err != nil || !has { return nil }
+    return &rv
+}
+
+func deleteReservation( udid string ) {
+    rv := DbReservation{
+        Udid: udid,
+    }
+    _, err := gDb.Delete( &rv )
+    if err != nil  {
+        fmt.Printf("Error: %s\n", err )
+        panic("Delete reservation error")
+    }
+}
+
+func deleteReservationWithRid( udid string, rid string ) {
+    rv := DbReservation{
+        Udid: udid,
+    }
+    affected, err := gDb.Where("Udid=? and Rid=?", udid, rid ).Delete( &rv )
+    if err != nil  {
+        fmt.Printf("Error: %s\n", err )
+        panic("Delete reservation error")
+    }
+    if affected==0 {
+      fmt.Printf("Delete reservation with rid %s; no rows deleted\n", rid)
+    }
+}
+
+func addReservation( udid string, user string, rid string ) bool {
+    rv := DbReservation{
+        Udid: udid,
+        User: user,
+        Rid: rid,
+    }
+    _, err := gDb.Insert( &rv )
+    if err != nil {
+        fmt.Printf("Error adding reservation: %s\n", err )
+        return false
+    }
+    return true
 }
 
 func getDevice( udid string ) (*DbDevice) {

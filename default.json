@@ -17,4 +17,5 @@
             ]
         }
     }
+    idleTimeout: "15m"
 }

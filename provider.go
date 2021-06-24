@@ -150,6 +150,14 @@ func (self *ReqTracker) processResp( msgType int, reqText []byte ) {
     // respond to the original request if needed
 }
 
+const (
+    CMKick = iota
+)
+type ClientMsg struct {
+    msgType int
+    msg     string
+}
+
 func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
     //s := getSession( c )
     
@@ -180,6 +188,9 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
     vidConn := self.devTracker.getVidStreamOutput( udid )
     outSocket := vidConn.socket
     
+    msgChan := make( chan ClientMsg )
+    self.devTracker.addClient( udid, msgChan )
+    
     go func() {
         for {
             if _, _, err := outSocket.NextReader(); err != nil {
@@ -200,7 +211,16 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
             provConn.stopImgStream( udid )
             break
         }
+        
+        select {
+            case msg := <- msgChan:
+                outSocket.WriteMessage( ws.TextMessage, []byte(msg.msg) )
+                if msg.msgType == CMKick { break }
+            default:       
+        }
     }
+    
+    self.devTracker.deleteClient( udid )
     
     if conn != nil { conn.Close() }
     if outSocket != nil { outSocket.Close() }

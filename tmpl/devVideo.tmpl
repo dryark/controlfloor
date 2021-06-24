@@ -34,6 +34,9 @@
   var vidWid={{ html .vidWidth }};
   var vidHeg={{ html .vidHeight }};
   var base = document.location.protocol + '//' + document.location.host;
+  var gone = 0;
+  var rid="{{ html .rid }}";
+  var idleTimeout = "{{ html .idleTimeout }}" * 1;
   
   function req( type, url, handler, body ) {
     var xhr = new XMLHttpRequest();
@@ -107,7 +110,8 @@
     var under = getel("under");
     var ws;
     var pos1;
-    
+    var idleSeconds = 0;
+     
     canvas.width = vidWid/2;
     canvas.height = vidHeg/2;
     under.width = vidWid/2;
@@ -203,14 +207,50 @@
           image.src = url;
         }
         else {
+            var data = event.data;
+            if( typeof data === 'string' ) {
+                var json = JSON.parse( data );
+                var type = json.type;
+                if( type && type == 'kick' ) {
+                    alert("You have been kicked");
+                    document.location.href = "/";
+                }
+            }
             console.log( event.data );
         }
     }
     ws.onerror = function( event ) {
         console.log( "Error: ", event.data );
     }
+    if( idleTimeout ) {
+      setInterval( function() {
+        idleSeconds += 3;
+        if( idleSeconds > idleTimeout ) {
+          ws.close();
+          navigator.sendBeacon( "/devVideoStop?udid="+udid+"&rid="+rid, "" );
+          alert("Inactivity timeout");
+          document.location.href = '/';
+        }
+      }, 3000 );
+      window.onmousemove = function() {
+        idleSeconds = 0;
+      }
+    }
   });
 </script>
+<script defer src="/assets/js/lifecycle.es5.js"></script>
+<script defer>
+  setTimeout( function() {
+    lifecycle.addEventListener('statechange', function( event ) {
+      if( !gone && /*event.originalEvent == 'visibilitychange' && */event.newState == 'hidden' ) {
+        gone = 1;
+        console.log("Sending beacon for udid " + udid );
+        navigator.sendBeacon( "/devVideoStop?udid="+udid+"&rid="+rid, "" );
+      }
+    } );
+  }, 1000 );
+</script>
+
 </head>
 
 <body>

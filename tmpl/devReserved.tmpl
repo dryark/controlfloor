@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>ControlFloor</title>
+
+		<link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css"	/>
+		<link rel="stylesheet"	href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
+		<link rel="stylesheet" href="/assets/css/styles.css" />
+		<link rel="stylesheet" href="/assets/css/sidebar.css" />
+	</head>
+	<body>
+		{{template "sidebar" dict "udid" .udid }}
+		<div class="main">
+		    Device is currently reserved by {{ html .user }}<br>
+		    <a href="/devKick?udid={{html .udid}}">Kick user</a>
+		</div>
+	</body>
+</html>

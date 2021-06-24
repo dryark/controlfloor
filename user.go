@@ -100,10 +100,20 @@ func (self *UserHandler) showUserRoot( c *gin.Context ) {
     
     jsont := ""
     for _, device := range devices {
+      provId := self.devTracker.getDevProvId( device.Udid )
+      if provId != 0 {
+        device.Ready = "Yes"
+      } else {
+        device.Ready = "No"
+      }
+      
       t, _ := json.Marshal( device )
+            
       jsont += string(t) + ","
     }
-    jsont = jsont[:len( jsont )-1]
+    if jsont != "" {
+        jsont = jsont[:len( jsont )-1]
+    }
     
     c.HTML( http.StatusOK, "userRoot", gin.H{
       "devices": output,

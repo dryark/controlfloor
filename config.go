@@ -4,6 +4,7 @@ import (
     "fmt"
     "io/ioutil"
     "os"
+    "time"
     uj "github.com/nanoscopic/ujsonin/v2/mod"
     log "github.com/sirupsen/logrus"
 )
@@ -13,12 +14,13 @@ type CDevice struct {
 }
 
 type Config struct {
-    listen string
-    https bool
-    crt string
-    key string
-    auth string
-    root uj.JNode
+    listen      string
+    https       bool
+    crt         string
+    key         string
+    auth        string
+    root        uj.JNode
+    idleTimeout int
 }
 
 func (self *Config) String() string {
@@ -60,8 +62,16 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
         config.key = GetStr( root, "key" )
         config.crt = GetStr( root, "crt" )
     }
-    authNode := config.root.Get("auth")
     
+    idleTimeout := GetStr( root, "idleTimeout" )
+    if idleTimeout == "" {
+        config.idleTimeout = 0
+    } else {
+        dur, _ := time.ParseDuration( idleTimeout )
+        config.idleTimeout = int(dur.Seconds())
+    }
+    
+    authNode := config.root.Get("auth")
     if authNode != nil {
         config.auth = GetStr( authNode, "type" )
     }

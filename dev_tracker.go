@@ -10,19 +10,30 @@ type VidConn struct {
     stopChan chan bool
 }
 
+type DevStatus struct {
+    wda   bool
+    video bool
+}
+
 type DevTracker struct {
     provConns map[int64] *ProviderConnection
     devToProv map[string] int64
+    DevStatus map[string] *DevStatus
     vidConns map[string] *VidConn 
+    clients map[string] chan ClientMsg
     lock *sync.Mutex
+    config *Config
 }
 
-func NewDevTracker() (*DevTracker) {
+func NewDevTracker( config *Config ) (*DevTracker) {
     self := &DevTracker{
         provConns: make( map[int64] *ProviderConnection ),
         devToProv: make( map[string] int64 ),
         lock: &sync.Mutex{},
         vidConns: make( map[string] *VidConn ),
+        DevStatus: make( map[string] *DevStatus ),
+        clients: make( map[string] chan ClientMsg ),
+        config: config,
     }
     
     return self
@@ -41,17 +52,66 @@ func (self *DevTracker) getVidStreamOutput( udid string ) (*VidConn) {
 func (self *DevTracker) setDevProv( udid string, provId int64 ) {
     self.lock.Lock()
     self.devToProv[ udid ] = provId
+    self.DevStatus[ udid ] = &DevStatus{}
     self.lock.Unlock()
 }
 
 func (self *DevTracker) clearDevProv( udid string ) {
     self.lock.Lock()
     delete( self.devToProv, udid )
+    delete( self.DevStatus, udid )
     self.lock.Unlock()
 }
 
+func (self *DevTracker) addClient( udid string, msgChan chan ClientMsg ) {
+    self.lock.Lock()
+    self.clients[ udid ] = msgChan
+    self.lock.Unlock()
+}
+
+func (self *DevTracker) deleteClient( udid string ) {
+    self.lock.Lock()
+    delete( self.clients, udid )
+    self.lock.Unlock()
+}
+
+func (self *DevTracker) msgClient( udid string, msg ClientMsg ) {
+    msgChan, chanOk := self.clients[ udid ]
+    if !chanOk { return }
+    msgChan <- msg
+}
+
+func (self *DevTracker) setDevStatus( udid string, service string, status bool ) {
+    stat, statOk := self.DevStatus[ udid ]
+    if !statOk {
+        return
+    }
+    if service == "wda" {
+        stat.wda = status
+        return
+    }
+    if service == "video" {
+        stat.video = status
+        return
+    }
+}
+
+func (self *DevTracker ) getDevStatus( udid string ) *DevStatus {
+    devStatus, devOk := self.DevStatus[ udid ]
+    if devOk {
+        return devStatus
+    } else {
+        return nil
+    }
+}
+
 func (self *DevTracker) getDevProvId( udid string ) int64 {
-    return self.devToProv[ udid ]
+    provId, provOk := self.devToProv[ udid ]
+    if provOk {
+        return provId
+    } else {
+        return 0
+    }
 }
 
 func (self *DevTracker) setProvConn( provId int64, provConn *ProviderConnection ) {
