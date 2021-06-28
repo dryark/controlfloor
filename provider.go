@@ -191,14 +191,16 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
     msgChan := make( chan ClientMsg )
     self.devTracker.addClient( udid, msgChan )
     
-    go func() {
-        for {
-            if _, _, err := outSocket.NextReader(); err != nil {
-                outSocket.Close()
-                break
+    if outSocket != nil {
+        go func() {
+            for {
+                if _, _, err := outSocket.NextReader(); err != nil {
+                    outSocket.Close()
+                    break
+                }
             }
-        }
-    }()
+        }()
+    }
     for {
         t, data, err := conn.ReadMessage()
         if err != nil {
