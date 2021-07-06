@@ -3,7 +3,7 @@ package main
 import (
     "fmt"
     //ecies "github.com/ecies/go"
-    uj "github.com/nanoscopic/ujsonin/mod"
+    uj "github.com/nanoscopic/ujsonin/v2/mod"
 )
 
 type ProviderConnection struct {
@@ -22,7 +22,7 @@ func NewProviderConnection( provChan chan ProvBase ) (*ProviderConnection) {
 
 func (self *ProviderConnection) doPing() {
     ping := &ProvPing{
-        onRes: func( root *uj.JNode ) {
+        onRes: func( root uj.JNode ) {
             text := root.Get("text").String()
             fmt.Printf("pong text %s\n", text )
         },
@@ -64,10 +64,13 @@ func (self *ProviderConnection) doHome( udid string ) {
     self.provChan <- home
 }
 
-func (self *ProviderConnection) doKeys( udid string, keys string ) {
+func (self *ProviderConnection) doKeys( udid string, keys string, curid int, prevkeys string, onDone func( uj.JNode ) ) {
     action := &ProvKeys{
         udid: udid,
         keys: keys,
+        curid: curid,
+        prevkeys: prevkeys,
+        onRes: onDone,
     }
     self.provChan <- action
 }

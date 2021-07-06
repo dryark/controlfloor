@@ -7,6 +7,7 @@ import (
     "strconv"
     "math/rand"
     "github.com/gin-gonic/gin"
+    uj "github.com/nanoscopic/ujsonin/v2/mod"
 )
 
 type DevHandler struct {
@@ -162,9 +163,22 @@ func (self *DevHandler) handleDevSwipe( c *gin.Context ) {
 }
 
 func (self *DevHandler) handleKeys( c *gin.Context ) {
-    keys := c.PostForm("keys")
+    keys     := c.PostForm("keys")
+    curid, _ := strconv.Atoi( c.PostForm("curid") )
+    prevkeys := c.PostForm("prevkeys")
+    
+    done := make( chan bool )
+    
     pc, udid := self.getPc( c )
-    pc.doKeys( udid, keys )
+    pc.doKeys( udid, keys, curid, prevkeys, func( uj.JNode ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
 }
 
 func (self *DevHandler) handleDevPing( c *gin.Context ) {

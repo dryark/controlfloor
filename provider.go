@@ -9,7 +9,7 @@ import (
     "sync"
     "time"
     ws "github.com/gorilla/websocket"
-    uj "github.com/nanoscopic/ujsonin/mod"
+    uj "github.com/nanoscopic/ujsonin/v2/mod"
     "github.com/gin-gonic/gin"
 )
 

@@ -37,7 +37,7 @@
   var gone = 0;
   var rid="{{ html .rid }}";
   var idleTimeout = "{{ html .idleTimeout }}" * 1;
-  
+  var keyid = 0;
   function req( type, url, handler, body ) {
     var xhr = new XMLHttpRequest();
     xhr.open( type, url, true );
@@ -78,43 +78,72 @@
     req( 'POST', base + '/devSwipe', function() {}, { udid, x1, y1, x2, y2 } );    
   }
   var keyqueue = [];
-  var firstkeyPress = 0;
+  var prevKeys = [];
+  var inRequest = 0;
+  /*
+  sendKeys has been hacked up a bunch since it was originally written.
+  Right now it is sending a single key at a time and waiting for that
+  call to complete before sending another key.
+  
+  This is done to prevent concurrency from causing keys to be entered
+  out of typing order.
+  
+  There is additional information being sent that is not needed currently
+  that could be used to be extremely sure keys are never sent out of order.
+  
+  This function can still be improved some more, as if keys are backed up
+  and waiting to be sent we could send more than a single key at once.
+  
+  The backend doesn't handle doing that as well as desierd so that is
+  avoided currently.
+  */
   function sendKeys() {
-    if( !keyqueue.length ) return;
-    var diffMs = Date.now() - firstkeyPress;
-    if( diffMs < 500 ) {
-      setTimeout( sendKeys, 200 );
-      return;
-    }
-    var keys = keyqueue.join(",");
-    keyqueue = [];
-    firstkeyPress = 0;
+    if( !keyqueue.length || inRequest ) return;
+    //var keys = keyqueue.join("");
+    var keyOb = keyqueue.shift();
     
-    req( 'POST', base + '/keys', function() {}, { udid, keys } );
+    //keyqueue = [];
+    inRequest = 1;
+    req( 'POST', base + '/keys', function() {
+      inRequest = 0;
+      if( keyqueue.length ) sendKeys();
+    }, {
+      udid: udid,
+      keys: keyOb.keycode,
+      curid: keyOb.keyid,
+      prevkeys: prevKeys.join("")
+    } );
+    prevKeys.unshift( keyOb.keyid );
+    while( prevKeys.length > 5 ) prevKeys.pop();
   }
   var mode = 'normal';
-  var capture = {};
-  var capture2 = {};
-  capture[8] = 8; // backspace
-  capture[9] = 9; // tab
-  capture[13] = 13; // enter
-  capture[46] = 127; // delete; map to ascii delete
-  capture2[39] = 1; // ' - quick search in firefox
-  capture2[47] = 1; // / - quick search also
+  var capture  = {}; // onkeydown
+  var capture2 = {}; // onkeypress
+  capture[-8] = -8; // backspace
+  capture[84] = 84; // tab
+  capture[-13] = -13; // enter
+  capture[-37] = -37;
+  capture[-38] = -38;
+  capture[-39] = -39;
+  capture[-40] = -40;
+  
+  capture[68] = 68; // delete; map to ascii delete
+  capture2[39] = 39; // ' - quick search in firefox
+  capture2[47] = 47; // / - quick search also
   window.addEventListener("load", function(evt) {
-    var canvas = getel("canvas");
-    var ctx    = canvas.getContext("2d");
-    var home   = getel("home");
+    var canvas    = getel("canvas");
+    var ctx       = canvas.getContext("2d");
+    var home      = getel("home");
     var hardPress = getel("hardPress");
     var longPress = getel("longPress");
-    var under = getel("under");
+    var under     = getel("under");
     var ws;
     var pos1;
     var idleSeconds = 0;
      
-    canvas.width = vidWid/2;
+    canvas.width  = vidWid/2;
     canvas.height = vidHeg/2;
-    under.width = vidWid/2;
+    under.width   = vidWid/2;
     
     home.onclick = function( event ) {
       req( 'POST', '/devHome', function() {}, { udid } );  
@@ -159,25 +188,35 @@
     }
     
     window.onkeydown = function( event ) {
-      var keycode = event.which;
-      if( capture[ keycode ] ) {
-        keycode = capture[ keycode ];
+      var key = event.key.charCodeAt(0);
+      if( key == 65 || key == 66 || key == 69 || key == 80 ) key = -event.keyCode;
+      
+      if( capture[ key ] ) {
+        key = capture[ key ];
         event.preventDefault();
-        if( !firstkeyPress ) firstkeyPress = Date.now();
-        keyqueue.push( keycode );
-        setTimeout( sendKeys, 500 );
+        keyqueue.push( {
+          keycode: key,
+          keyid: keyid
+        } );
+        keyid++;
+        sendKeys();
       }
-      else console.log( "key " + keycode );
+      else console.log( "key " + key );
     }
     
     window.onkeypress = function( event ) {
-      var keycode = event.which;
-      if( !firstkeyPress ) firstkeyPress = Date.now();
-      keyqueue.push( keycode );
-      setTimeout( sendKeys, 500 );
-      if( capture2[ keycode ] ) {
+      var key = event.key.charCodeAt(0);
+      if( key == 65 || key == 66 || key == 69 || key == 80 ) key = -event.keyCode;
+      
+      keyqueue.push( {
+        keycode: key,
+        keyid: keyid
+      } );
+      keyid++;
+      sendKeys();
+      if( capture2[ key ] ) {
         event.preventDefault();
-      } else console.log( "key2 " + keycode );
+      } else console.log( "key2 " + key );
     }
     
     var wsprot = ( document.location.protocol == 'https:' ) ? "wss" : "ws"; 
@@ -242,6 +281,7 @@
 <script defer>
   setTimeout( function() {
     lifecycle.addEventListener('statechange', function( event ) {
+      // Despite information online saying this should work with visibilitychange; it does not
       if( !gone && /*event.originalEvent == 'visibilitychange' && */event.newState == 'hidden' ) {
         gone = 1;
         console.log("Sending beacon for udid " + udid );
