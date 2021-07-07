@@ -131,12 +131,14 @@
   var capture  = {}; // onkeydown
   var capture2 = {}; // onkeypress
   capture[-8] = -8; // backspace
-  capture[84] = 84; // tab
+  capture[-9] = -9; // tab
   capture[-13] = -13; // enter
-  capture[-37] = -37;
-  capture[-38] = -38;
-  capture[-39] = -39;
-  capture[-40] = -40;
+  capture[-35] = -35 // end
+  capture[-36] = -36 // home
+  capture[-37] = -37; // left
+  capture[-38] = -38; // up
+  capture[-39] = -39; // right
+  capture[-40] = -40; // down
   
   capture[68] = 68; // delete; map to ascii delete
   capture2[39] = 39; // ' - quick search in firefox
@@ -199,9 +201,11 @@
     }
     
     window.onkeydown = function( event ) {
-      var key = event.key.charCodeAt(0);
-      if( key == 65 || key == 66 || key == 69 || key == 80 ) key = -event.keyCode;
-      
+      var key = event.key;
+      if( key == "Shift" ) return;
+      if( key.length==1 ) key = key.charCodeAt(0);
+      else key = -event.keyCode;
+            
       if( capture[ key ] ) {
         key = capture[ key ];
         event.preventDefault();
@@ -216,8 +220,10 @@
     }
     
     window.onkeypress = function( event ) {
-      var key = event.key.charCodeAt(0);
-      if( key == 65 || key == 66 || key == 69 || key == 80 ) key = -event.keyCode;
+      var key = event.key;
+      
+      if( key.length==1 ) key = key.charCodeAt(0);
+      else key = -event.keyCode;
       
       keyqueue.push( {
         keycode: key,
