@@ -33,11 +33,22 @@
   var clickHeg={{ html .clickHeight }};
   var vidWid={{ html .vidWidth }};
   var vidHeg={{ html .vidHeight }};
+  var maxHeg={{ html .maxHeight }};
+  var displayWid=0;
+  var displayHeg=0;
   var base = document.location.protocol + '//' + document.location.host;
   var gone = 0;
   var rid="{{ html .rid }}";
   var idleTimeout = "{{ html .idleTimeout }}" * 1;
   var keyid = 0;
+  if( vidHeg < maxHeg ) {
+    displayHeg = vidHeg;
+    displayWid = vidWid;
+  } else {
+    var wOverH = vidWid / vidHeg;
+    displayHeg = maxHeg;
+    displayWid = maxHeg * wOverH;
+  }
   function req( type, url, handler, body ) {
     var xhr = new XMLHttpRequest();
     xhr.open( type, url, true );
@@ -56,25 +67,25 @@
     else xhr.send();
   }
   function clickAt( pos ) {
-    var x = Math.floor( (pos[0]/(vidWid/2))*clickWid ); 
-    var y = Math.floor( (pos[1]/(vidHeg/2))*clickHeg );
+    var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
+    var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
     req( 'POST', base + '/devClick', function() {}, { udid, x, y } );    
   }
   function doHardPress( pos ) {
-    var x = Math.floor( (pos[0]/(vidWid/2))*clickWid ); 
-    var y = Math.floor( (pos[1]/(vidHeg/2))*clickHeg );
+    var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
+    var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
     req( 'POST', base + '/devHardPress', function() {}, { udid, x, y } );    
   }
   function doLongPress( pos ) {
-    var x = Math.floor( (pos[0]/(vidWid/2))*clickWid ); 
-    var y = Math.floor( (pos[1]/(vidHeg/2))*clickHeg );
+    var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
+    var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
     req( 'POST', base + '/devLongPress', function() {}, { udid, x, y } );    
   }
   function swipe( pos1, pos2 ) {
-    var x1 = Math.floor( (pos1[0]/(vidWid/2))*clickWid ); 
-    var y1 = Math.floor( (pos1[1]/(vidHeg/2))*clickHeg );
-    var x2 = Math.floor( (pos2[0]/(vidWid/2))*clickWid ); 
-    var y2 = Math.floor( (pos2[1]/(vidHeg/2))*clickHeg );
+    var x1 = Math.floor( (pos1[0]/displayWid)*clickWid ); 
+    var y1 = Math.floor( (pos1[1]/displayHeg)*clickHeg );
+    var x2 = Math.floor( (pos2[0]/displayWid)*clickWid ); 
+    var y2 = Math.floor( (pos2[1]/displayHeg)*clickHeg );
     req( 'POST', base + '/devSwipe', function() {}, { udid, x1, y1, x2, y2 } );    
   }
   var keyqueue = [];
@@ -140,10 +151,10 @@
     var ws;
     var pos1;
     var idleSeconds = 0;
-     
-    canvas.width  = vidWid/2;
-    canvas.height = vidHeg/2;
-    under.width   = vidWid/2;
+    
+    canvas.width      = displayWid;
+    canvas.height     = displayHeg;
+    under.style.width = displayWid + "px";
     
     home.onclick = function( event ) {
       req( 'POST', '/devHome', function() {}, { udid } );  
@@ -234,7 +245,7 @@
           var image = new Image();
           var url;
           image.onload = function() {
-            ctx.drawImage(image, 0, 0, vidWid/2, vidHeg/2 );
+            ctx.drawImage(image, 0, 0, displayWid, displayHeg );
             URL.revokeObjectURL( url );
           };
           image.onerror = function( e ) {

@@ -21,6 +21,7 @@ type Config struct {
     auth        string
     root        uj.JNode
     idleTimeout int
+    maxHeight   int
 }
 
 func (self *Config) String() string {
@@ -46,6 +47,14 @@ func GetBool( root uj.JNode, path string ) bool {
         os.Exit(1)
     }
     return node.Bool()
+}
+func GetInt( root uj.JNode, path string ) int {
+    node := root.Get( path )
+    if node == nil {
+        fmt.Fprintf( os.Stderr, "%s is not set in either config.json or default.json", path )
+        os.Exit(1)
+    }
+    return node.Int()
 }
 
 func NewConfig( configPath string, defaultsPath string ) (*Config) {
@@ -75,6 +84,8 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
     if authNode != nil {
         config.auth = GetStr( authNode, "type" )
     }
+    
+    config.maxHeight = GetInt( root, "video.maxHeight" )
     
     return &config
 }

@@ -79,7 +79,7 @@ func runMain( *uc.Cmd ) {
     ph := NewProviderHandler( r, devTracker, sessionManager )
     pAuth := ph.registerProviderRoutes()
     
-    dh := NewDevHandler( pAuth, uAuth, devTracker, sessionManager )
+    dh := NewDevHandler( pAuth, uAuth, devTracker, sessionManager, conf )
     dh.registerDeviceRoutes()
     
     th := NewTestHandler( r, sessionManager )

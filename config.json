@@ -9,4 +9,10 @@
         // "mod" additionally checks for controlfloor_auth mod based auth
         type: "mod"
     }
+    
+    video: {
+        // The maximum vertical size in pixels of displayed video when viewing
+        //   device video in CF
+        maxHeight: 1000
+    }
 }

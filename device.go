@@ -15,6 +15,7 @@ type DevHandler struct {
     userAuthGroup     *gin.RouterGroup
     devTracker        *DevTracker
     sessionManager    *cfSessionManager
+    config            *Config
 }
 
 func NewDevHandler(
@@ -22,12 +23,14 @@ func NewDevHandler(
     userAuthGroup     *gin.RouterGroup,
     devTracker        *DevTracker,
     sessionManager    *cfSessionManager,
+    config            *Config,
 ) *DevHandler {
     return &DevHandler{
         providerAuthGroup,
         userAuthGroup,
         devTracker,
         sessionManager,
+        config,
     }
 }
 
@@ -249,8 +252,9 @@ func (self *DevHandler) showDevVideo( c *gin.Context ) {
         "clickHeight": dev.ClickHeight,
         "vidWidth":    dev.Width,
         "vidHeight":   dev.Height,
-        "rid": rid,
+        "rid":         rid,
         "idleTimeout": self.devTracker.config.idleTimeout,
+        "maxHeight":   self.config.maxHeight,
     } )
 }
 
