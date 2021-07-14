@@ -21,4 +21,8 @@
     video: {
         maxHeight: 1000
     }
+    text: {
+        deviceVideo: "Device Video"
+    }
+    disableCache: false
 }

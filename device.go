@@ -109,7 +109,7 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
     provId := self.devTracker.getDevProvId( udid )
     
     c.HTML( http.StatusOK, "devInfo", gin.H{
-        "udid": udid,
+        "udid":        udid,
         "name":        dev.Name,
         "clickWidth":  dev.ClickWidth,
         "clickHeight": dev.ClickHeight,
@@ -119,6 +119,7 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
         "info":        info,
         "wdaStatus":   wdaUp,
         "videoStatus": videoUp,
+        "deviceVideo": self.config.text.deviceVideo,
     } )
 }
 
@@ -133,7 +134,18 @@ func (self *DevHandler) handleDevClick( c *gin.Context ) {
     x, _ := strconv.Atoi( c.PostForm("x") )
     y, _ := strconv.Atoi( c.PostForm("y") )
     pc, udid := self.getPc( c )
-    pc.doClick( udid, x, y )
+    
+    done := make( chan bool )
+    
+    pc.doClick( udid, x, y, func( uj.JNode ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
 }
 
 func (self *DevHandler) handleDevHardPress( c *gin.Context ) {
@@ -153,7 +165,18 @@ func (self *DevHandler) handleDevLongPress( c *gin.Context ) {
 func (self *DevHandler) handleDevHome( c *gin.Context ) {
     udid := c.PostForm("udid")
     pc, udid := self.getPc( c )
-    pc.doHome( udid )
+    
+    done := make( chan bool )
+    
+    pc.doHome( udid, func( uj.JNode ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
 }
 
 func (self *DevHandler) handleDevSwipe( c *gin.Context ) {
@@ -161,8 +184,20 @@ func (self *DevHandler) handleDevSwipe( c *gin.Context ) {
     y1, _ := strconv.Atoi( c.PostForm("y1") )
     x2, _ := strconv.Atoi( c.PostForm("x2") )
     y2, _ := strconv.Atoi( c.PostForm("y2") )
+    delay, _ := strconv.ParseFloat( c.PostForm("delay"), 64 )
     pc, udid := self.getPc( c )
-    pc.doSwipe( udid, x1, y1, x2, y2 )
+    
+    done := make( chan bool )
+    
+    pc.doSwipe( udid, x1, y1, x2, y2, delay, func( uj.JNode ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
 }
 
 func (self *DevHandler) handleKeys( c *gin.Context ) {
@@ -247,7 +282,7 @@ func (self *DevHandler) showDevVideo( c *gin.Context ) {
     }
     
     c.HTML( http.StatusOK, "devVideo", gin.H{
-        "udid": udid,
+        "udid":        udid,
         "clickWidth":  dev.ClickWidth,
         "clickHeight": dev.ClickHeight,
         "vidWidth":    dev.Width,
@@ -255,6 +290,7 @@ func (self *DevHandler) showDevVideo( c *gin.Context ) {
         "rid":         rid,
         "idleTimeout": self.devTracker.config.idleTimeout,
         "maxHeight":   self.config.maxHeight,
+        "deviceVideo": self.config.text.deviceVideo,
     } )
 }
 

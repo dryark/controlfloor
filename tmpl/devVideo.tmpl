@@ -9,11 +9,19 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
 <link rel="stylesheet" href="/assets/css/styles.css" />
 <link rel="stylesheet" href="/assets/css/sidebar.css" />
-		
+<link href="https://unpkg.com/@mountable/spinners@0.0.25/dist/mSpinnerSwirl.css" rel="stylesheet">
+
 <meta charset="utf-8">
 <style>
   canvas {
     border: solid 1px black;
+  }
+  .m-spinner--swirl {
+    --spinner-color: red;
+    --spinner-color-secondary: blue;
+  }
+  .hidden {
+    display: none;
   }
 </style>
 <script>
@@ -41,6 +49,9 @@
   var rid="{{ html .rid }}";
   var idleTimeout = "{{ html .idleTimeout }}" * 1;
   var keyid = 0;
+  var mouseDownDate;
+  var mouseUpDate;
+  
   if( vidHeg < maxHeg ) {
     displayHeg = vidHeg;
     displayWid = vidWid;
@@ -66,31 +77,61 @@
     }
     else xhr.send();
   }
+  
+  var waitnum = 0;
+  function wait() {
+    if( !waitnum ) {
+      var waiter = getel("waiter");
+      waiter.className = "m-spinner--swirl";
+    }
+    waitnum++;
+  }
+  function unwait() {
+    if( waitnum > 0 ) waitnum--;
+    if( !waitnum ) {
+      var waiter = getel("waiter");
+      waiter.className = "m-spinner--swirl hidden";
+    }
+  }
+  
   function clickAt( pos ) {
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
-    req( 'POST', base + '/devClick', function() {}, { udid, x, y } );    
+    wait();
+    req( 'POST', base + '/devClick', function() {
+      unwait();
+    }, { udid, x, y } );    
   }
   function doHardPress( pos ) {
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
-    req( 'POST', base + '/devHardPress', function() {}, { udid, x, y } );    
+    wait();
+    req( 'POST', base + '/devHardPress', function() {
+      unwait();
+    }, { udid, x, y } );    
   }
   function doLongPress( pos ) {
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
-    req( 'POST', base + '/devLongPress', function() {}, { udid, x, y } );    
+    wait();
+    req( 'POST', base + '/devLongPress', function() {
+      unwait();
+    }, { udid, x, y } );    
   }
-  function swipe( pos1, pos2 ) {
+  function swipe( pos1, pos2, delay ) {
     var x1 = Math.floor( (pos1[0]/displayWid)*clickWid ); 
     var y1 = Math.floor( (pos1[1]/displayHeg)*clickHeg );
     var x2 = Math.floor( (pos2[0]/displayWid)*clickWid ); 
     var y2 = Math.floor( (pos2[1]/displayHeg)*clickHeg );
-    req( 'POST', base + '/devSwipe', function() {}, { udid, x1, y1, x2, y2 } );    
+    wait();
+    req( 'POST', base + '/devSwipe', function() {
+      unwait();
+    }, { udid, x1, y1, x2, y2, delay } );    
   }
   var keyqueue = [];
   var prevKeys = [];
   var inRequest = 0;
+  var pos1;
   /*
   sendKeys has been hacked up a bunch since it was originally written.
   Right now it is sending a single key at a time and waiting for that
@@ -115,7 +156,9 @@
     
     //keyqueue = [];
     inRequest = 1;
+    wait();
     req( 'POST', base + '/keys', function() {
+      unwait();
       inRequest = 0;
       if( keyqueue.length ) sendKeys();
     }, {
@@ -127,20 +170,24 @@
     prevKeys.unshift( keyOb.keyid );
     while( prevKeys.length > 5 ) prevKeys.pop();
   }
+  
   var mode = 'normal';
   var capture  = {}; // onkeydown
   var capture2 = {}; // onkeypress
   capture[-8] = -8; // backspace
   capture[-9] = -9; // tab
   capture[-13] = -13; // enter
-  capture[-35] = -35 // end
-  capture[-36] = -36 // home
+  capture[-34] = -34; // pagedown
+  capture[-33] = -33; // pageup
+  capture[-35] = -35; // end
+  capture[-36] = -36; // home
   capture[-37] = -37; // left
   capture[-38] = -38; // up
   capture[-39] = -39; // right
   capture[-40] = -40; // down
+  capture[-46] = -46; // delete
   
-  capture[68] = 68; // delete; map to ascii delete
+  //capture[68] = 68; // delete; map to ascii delete
   capture2[39] = 39; // ' - quick search in firefox
   capture2[47] = 47; // / - quick search also
   window.addEventListener("load", function(evt) {
@@ -150,16 +197,21 @@
     var hardPress = getel("hardPress");
     var longPress = getel("longPress");
     var under     = getel("under");
+    var vidbox    = getel("vidbox");
     var ws;
-    var pos1;
+    
     var idleSeconds = 0;
     
+    vidbox.style.width  = ( displayWid + 100 ) + "px";
     canvas.width      = displayWid;
     canvas.height     = displayHeg;
     under.style.width = displayWid + "px";
     
     home.onclick = function( event ) {
-      req( 'POST', '/devHome', function() {}, { udid } );  
+      wait();
+      req( 'POST', '/devHome', function() {
+        unwait();
+      }, { udid } );  
     }
     hardPress.onclick = function( event ) {
       if( mode != 'hard' ) {
@@ -183,6 +235,7 @@
     }
     
     canvas.onmousedown = function( event ) {
+      mouseDownDate = new Date();
       var pos = getCursorPosition( canvas, event );
       if     ( mode == 'hard' ) doHardPress( pos );
       else if( mode == 'long' ) doLongPress( pos );
@@ -191,11 +244,15 @@
     
     canvas.onmouseup = function( event ) {
       if( mode != 'normal' ) return;
+      mouseUpDate = new Date();
+      var msDiff = mouseUpDate - mouseDownDate;
+      var sDiff = msDiff / 1000;
+      sDiff = Math.floor( sDiff * 100 ) / 100; // .00 resolution
       var pos2 = getCursorPosition( canvas, event );
       var dx = Math.abs( pos2[0] - pos1[0] );
       var dy = Math.abs( pos2[1] - pos1[1] );
       if( dx > 3 || dy > 3 ) {
-        swipe( pos1, pos2 );
+        swipe( pos1, pos2, sDiff );
       }
       else clickAt( pos1 );
     }
@@ -205,7 +262,7 @@
       if( key == "Shift" ) return;
       if( key.length==1 ) key = key.charCodeAt(0);
       else key = -event.keyCode;
-            
+      
       if( capture[ key ] ) {
         key = capture[ key ];
         event.preventDefault();
@@ -311,15 +368,17 @@
 </head>
 
 <body>
-    {{template "sidebar" dict "udid" .udid }}
-    <div class="main">
-        <canvas id="canvas" width="375" height="667"></canvas><br>
-        <div style="width:375px; font-size: 32px" id="under">
-            <center>
-                <i id='home' class="mdi mdi-home"></i>
-                <i id='hardPress' class="mdi mdi-anvil mInactive"></i>
-                <i id='longPress' class="mdi mdi-alarm-multiple mInactive"></i>
-            </i>
+    {{template "sidebar" dict "udid" .udid "deviceVideo" .deviceVideo}}
+    <div id="main" class="main">
+        <div id="vidbox" style="margin:auto">
+            <canvas id="canvas" width="375" height="667"></canvas> <i id="waiter" style="vertical-align: top" class="hidden m-spinner--swirl"></i><br>
+            <div style="width:375px; font-size: 32px" id="under">
+                <center>
+                    <i id='home' class="mdi mdi-home"></i>
+                    <i id='hardPress' class="mdi mdi-anvil mInactive"></i>
+                    <i id='longPress' class="mdi mdi-alarm-multiple mInactive"></i>
+                </i>
+            </div>
         </div>
     </div>
 </body>

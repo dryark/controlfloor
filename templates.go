@@ -4,17 +4,19 @@ import (
     "errors"
     "fmt"
     "html/template"
-    "io/ioutil"
-    "strings"
     "github.com/gin-gonic/gin"
+    "github.com/foolin/goview"
+    "github.com/foolin/goview/supports/ginview"
 )
 
-func initTemplates( r *gin.Engine ) {
-    templates, err := loadTemplatesFromDir( "tmpl" )
-    if err != nil {
-        panic( err )
-    }
-    r.SetHTMLTemplate( templates )
+func initTemplates( r *gin.Engine, config *Config ) {
+    r.HTMLRender = ginview.New( goview.Config{
+        Root:         "tmpl",
+        Extension:    ".tmpl",
+        Partials:     []string{"sidebar"},
+        Funcs:        createFuncMap(),
+        DisableCache: config.disableCache,
+    } )
 }
 
 func toHTML( s string ) template.HTML {
@@ -61,41 +63,11 @@ func tdefault(val interface{}, def interface{}) interface{} {
     return val
 }
 
-func loadTemplatesFromDir( dir string ) (*template.Template, error) {
-    t := template.New("")
-    
-    funcMap := template.FuncMap{
-        "html": toHTML,
-        "dict": dictFunc,
+func createFuncMap() template.FuncMap {
+    return template.FuncMap{
+        "html":    toHTML,
+        "dict":    dictFunc,
         "default": tdefault,
-        "json": toJSON,
+        "json":    toJSON,
     }
-    t = t.Funcs( funcMap )
-    
-    files, err := ioutil.ReadDir( dir )
-    if err != nil {
-        return nil, err
-    }
-    
-    for _, file := range files {
-        name := file.Name()
-        if file.IsDir() || !strings.HasSuffix( name, ".tmpl" ) {
-            continue
-        }
-        fullName := dir + "/" + name
-        fmt.Printf("Loading template from %s\n", name )
-        
-        content, err := ioutil.ReadFile( fullName )
-        if err != nil {
-            return nil, err
-        }
-        refName := name[ 0 : len( name ) - 5 ]
-        
-        t, err = t.New( refName ).Parse( string( content ) )
-        if err != nil {
-            return nil, err
-        }
-    }
-        
-    return t, nil
 }

@@ -13,6 +13,7 @@ type UserHandler struct {
     r              *gin.Engine
     devTracker     *DevTracker
     sessionManager *cfSessionManager
+    config         *Config
 }
 
 func NewUserHandler(
@@ -20,12 +21,14 @@ func NewUserHandler(
     r              *gin.Engine,
     devTracker     *DevTracker,
     sessionManager *cfSessionManager,
+    config         *Config,
 ) *UserHandler {
     return &UserHandler{
         authHandler,
         r,
         devTracker,
         sessionManager,
+        config,
     }
 }
 
@@ -116,8 +119,9 @@ func (self *UserHandler) showUserRoot( c *gin.Context ) {
     }
     
     c.HTML( http.StatusOK, "userRoot", gin.H{
-      "devices": output,
+      "devices":      output,
       "devices_json": jsont,
+      "deviceVideo":  self.config.text.deviceVideo,
     } )
 }
 

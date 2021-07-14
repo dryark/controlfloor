@@ -25,9 +25,12 @@ type ProvClick struct {
     udid string
     x int
     y int
+    onRes func( uj.JNode )
 }
-func (self *ProvClick) resHandler() (func(uj.JNode) ) { return nil }
-func (self *ProvClick) needsResponse() (bool) { return false }
+func (self *ProvClick) resHandler() ( func(data uj.JNode) ) {
+    return self.onRes
+}
+func (self *ProvClick) needsResponse() (bool) { return true }
 func (self *ProvClick) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"click\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
 }
@@ -56,9 +59,12 @@ func (self *ProvLongPress) asText( id int16 ) (string) {
 
 type ProvHome struct {
     udid string
+    onRes func( uj.JNode )
 }
-func (self *ProvHome) resHandler() (func(uj.JNode) ) { return nil }
-func (self *ProvHome) needsResponse() (bool) { return false }
+func (self *ProvHome) resHandler() ( func(data uj.JNode) ) {
+    return self.onRes
+}
+func (self *ProvHome) needsResponse() (bool) { return true }
 func (self *ProvHome) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"home\",udid:\"%s\"}\n",id,self.udid)
 }
@@ -85,11 +91,17 @@ type ProvSwipe struct {
     y1 int
     x2 int
     y2 int
+    delay float64
+    onRes func( uj.JNode )
 }
-func (self *ProvSwipe) resHandler() ( func(uj.JNode) ) { return nil }
-func (self *ProvSwipe) needsResponse() (bool) { return false }
+func (self *ProvSwipe) resHandler() ( func(data uj.JNode) ) {
+    return self.onRes
+}
+func (self *ProvSwipe) needsResponse() (bool) { return true }
 func (self *ProvSwipe) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"swipe\",udid:\"%s\",x1:%d,y1:%d,x2:%d,y2:%d}\n",id,self.udid,self.x1,self.y1,self.x2,self.y2)
+    delayBy100 := int( self.delay * 100 )
+    return fmt.Sprintf("{id:%d,type:\"swipe\",udid:\"%s\",x1:%d,y1:%d,x2:%d,y2:%d,delay:%d}\n",
+        id,self.udid,self.x1,self.y1,self.x2,self.y2,delayBy100)
 }
 
 type ProvStartStream struct {

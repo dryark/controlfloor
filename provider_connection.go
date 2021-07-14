@@ -30,11 +30,12 @@ func (self *ProviderConnection) doPing() {
     self.provChan <- ping
 }
 
-func (self *ProviderConnection) doClick( udid string, x int, y int ) {
+func (self *ProviderConnection) doClick( udid string, x int, y int, onDone func( uj.JNode ) ) {
     click := &ProvClick{
         udid: udid,
         x: x,
         y: y,
+        onRes: onDone,
     }
     self.provChan <- click
 }
@@ -57,9 +58,10 @@ func (self *ProviderConnection) doLongPress( udid string, x int, y int ) {
     self.provChan <- click
 }
 
-func (self *ProviderConnection) doHome( udid string ) {
+func (self *ProviderConnection) doHome( udid string, onDone func( uj.JNode ) ) {
     home := &ProvHome{
         udid: udid,
+        onRes: onDone,
     }
     self.provChan <- home
 }
@@ -75,13 +77,15 @@ func (self *ProviderConnection) doKeys( udid string, keys string, curid int, pre
     self.provChan <- action
 }
 
-func (self *ProviderConnection) doSwipe( udid string, x1 int, y1 int, x2 int, y2 int ) {
+func (self *ProviderConnection) doSwipe( udid string, x1 int, y1 int, x2 int, y2 int, delay float64, onDone func( uj.JNode ) ) {
     swipe := &ProvSwipe{
         udid: udid,
         x1: x1,
         y1: y1,
         x2: x2,
         y2: y2,
+        delay: delay,
+        onRes: onDone,
     }
     self.provChan <- swipe
 }

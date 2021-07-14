@@ -13,6 +13,10 @@ type CDevice struct {
     udid string
 }
 
+type ConfigText struct {
+    deviceVideo string
+}
+
 type Config struct {
     listen      string
     https       bool
@@ -22,6 +26,8 @@ type Config struct {
     root        uj.JNode
     idleTimeout int
     maxHeight   int
+    text        *ConfigText
+    disableCache bool
 }
 
 func (self *Config) String() string {
@@ -86,6 +92,12 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
     }
     
     config.maxHeight = GetInt( root, "video.maxHeight" )
+    
+    config.text = &ConfigText{
+        deviceVideo: GetStr( root, "text.deviceVideo" ),
+    }
+    
+    config.disableCache = GetBool( root, "disableCache" )
     
     return &config
 }

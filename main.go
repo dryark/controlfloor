@@ -12,10 +12,10 @@ import (
 
 func main() {
     uclop := uc.NewUclop()
-    uclop.AddCmd( "run", "Run ControlFloor", runMain, nil )
+    uclop.AddCmd( "run",  "Run ControlFloor",        runMain, nil )
     uclop.AddCmd( "devs", "List registered devices", runListDevs, nil )
-    uclop.AddCmd( "prov", "List providers", runListProv, nil )
-    uclop.AddCmd( "conf", "Dump configuration", runDumpConf, nil )
+    uclop.AddCmd( "prov", "List providers",          runListProv, nil )
+    uclop.AddCmd( "conf", "Dump configuration",      runDumpConf, nil )
     uclop.Run()
 }
 
@@ -62,7 +62,7 @@ func runMain( *uc.Cmd ) {
     gin.SetMode(gin.ReleaseMode)
     r := gin.New()
             
-    initTemplates( r )
+    initTemplates( r, conf )
     r.Static("/assets", "./assets")
     sessionManager := NewSessionManager( r )
     
@@ -73,7 +73,7 @@ func runMain( *uc.Cmd ) {
         authHandler = cfauth.NewAuthHandler( conf.root, sessionManager )
     }
     
-    uh := NewUserHandler( authHandler, r, devTracker, sessionManager )
+    uh := NewUserHandler( authHandler, r, devTracker, sessionManager, conf )
     uAuth := uh.registerUserRoutes()
     
     ph := NewProviderHandler( r, devTracker, sessionManager )

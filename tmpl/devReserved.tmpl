@@ -11,7 +11,7 @@
 		<link rel="stylesheet" href="/assets/css/sidebar.css" />
 	</head>
 	<body>
-		{{template "sidebar" dict "udid" .udid }}
+		{{template "sidebar" dict "udid" .udid "deviceVideo" .deviceVideo}}
 		<div class="main">
 		    Device is currently reserved by {{ html .user }}<br>
 		    <a href="/devKick?udid={{html .udid}}">Kick user</a>
