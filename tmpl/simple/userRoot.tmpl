@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>ControlFloor</title>
+
+		<link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css"	/>
+		<link rel="stylesheet"	href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
+		<link rel="stylesheet" href="/assets/css/styles.css" />
+		<link rel="stylesheet" href="/assets/css/table.css" />
+		<link rel="stylesheet" href="/assets/css/sidebar.css" />
+		
+		<link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css" />
+		<style>
+		  div.dt-button-collection {
+		    width: auto;
+		  }
+		  td.hover {
+		    background-color: #bbbbbb !important;
+		    cursor: pointer;
+		  }
+		</style>
+		
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.slim.min.js"></script>
+		<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+		<script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.colVis.min.js"></script>
+		<script>
+		  function go() {
+		    var tbl = $("#devices")
+ 
+		    for( var i=0;i<devices_data.length;i++ ) {
+		      var device = devices_data[i];
+		      var json = device.JsonInfo;
+		      if( json ) {
+		        console.log(json);
+		        json = json.replace(',}','}');
+		        device.JsonInfo = JSON.parse( json );
+		        device.jsonRaw = json;
+		      } else {
+		        device.jsonRaw = "";
+		        device.JsonInfo = {
+		          ModelNumber: "",
+		          HardwareModel: "",
+		          ArtworkDeviceProductDescription:"unknown"
+		        };
+		      }
+		      
+		      if( device.Ready == "Yes" ) {
+		        device.status = "Click to use";
+		      } else if( device.Ready == "No" ) {
+		        device.status = "Offline";
+		      } else if( device.Ready == "In Use" ) {
+		        device.status = "In Use";
+		      }
+		    }
+		    
+        var ob = tbl.DataTable ({
+            dom: 'Bfrtip',
+            "data" : devices_data,
+            "columns" : [
+                {
+                  data: "status",
+                  title: ""
+                },
+                {
+                  data: "Udid",
+                  title: "UDID"
+                },
+                {
+                  data: "Name",
+                  title: "Name",
+                },
+                {
+                  data: "jsonRaw",
+                  title: "Raw Device Info",
+                  visible: false,
+                },
+                {
+                  data: "JsonInfo.ModelNumber",
+                  title: "Model Number",
+                  visible: false
+                },
+                {
+                  data: "JsonInfo.ProductVersion",
+                  title: "iOS Version"
+                },
+                {
+                  data: "JsonInfo.HardwareModel",
+                  title: "Hardware Model",
+                  visible: false
+                },
+                {
+                  data: "JsonInfo.ArtworkDeviceProductDescription",
+                  title: "Device Type"
+                }
+            ],
+            buttons: [
+              {
+                extend: 'colvis',
+                columns: ':gt(0)',
+                text: "Columns"
+              }
+            ],
+            paging: false,
+            info: false,
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search..."
+            }
+        });
+        
+        $(document).on({
+          mouseenter: function () {
+            trIndex = $(this).index()+1;
+            $("table.dataTable").each(function(index) {
+            $(this).find("tr:eq("+trIndex+")").each(function(index) {
+            $(this).find("td").addClass("hover");
+            });
+            });
+          },
+          mouseleave: function () {
+            trIndex = $(this).index()+1;
+            $("table.dataTable").each(function(index) {
+            $(this).find("tr:eq("+trIndex+")").each(function(index) {
+            $(this).find("td").removeClass("hover");
+            });
+            });
+          },
+          click: function() {
+            var row = ob.row($(this)).data();
+            console.log( row );
+            document.location.href = "/devVideo?udid=" + row.Udid;
+          }
+        }, ".dataTables_wrapper tr");
+		  }
+		</script>
+	</head>
+	<body onload="go()">
+		<div class="main" style="z-index: 0; position: relative">
+		    <script>
+        var devices_data = [
+          {{ json .devices_json }}
+        ];
+        </script>
+        <div id="info"></div><br>
+        <table id="devices" class="display cell-border" style="width:100%;"></table>
+		</div>
+	</body>
+</html>

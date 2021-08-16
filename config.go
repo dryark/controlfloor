@@ -28,6 +28,7 @@ type Config struct {
     maxHeight   int
     text        *ConfigText
     disableCache bool
+    theme       string
 }
 
 func (self *Config) String() string {
@@ -98,6 +99,8 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
     }
     
     config.disableCache = GetBool( root, "disableCache" )
+    
+    config.theme = GetStr( root, "theme" )
     
     return &config
 }

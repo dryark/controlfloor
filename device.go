@@ -94,7 +94,7 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
       json.Unmarshal([]byte(info), &obj)
       infoBytes, _ := json.MarshalIndent(obj, "<br>", " &nbsp; &nbsp; &nbsp; ")
       info = string( infoBytes )
-    }    
+    }
     
     stat := self.devTracker.getDevStatus( udid )
     wdaUp := "-"
@@ -281,6 +281,15 @@ func (self *DevHandler) showDevVideo( c *gin.Context ) {
         addReservation( udid, user, rid )
     }
     
+    rawInfo := dev.JsonInfo
+    info := "{}"
+    if rawInfo != "" {
+      var obj map[string]interface{}
+        json.Unmarshal([]byte(rawInfo), &obj)
+        infoBytes, _ := json.MarshalIndent(obj, "<br>", " &nbsp; &nbsp; &nbsp; ")
+        info = string( infoBytes )
+    }
+    
     c.HTML( http.StatusOK, "devVideo", gin.H{
         "udid":        udid,
         "clickWidth":  dev.ClickWidth,
@@ -291,6 +300,8 @@ func (self *DevHandler) showDevVideo( c *gin.Context ) {
         "idleTimeout": self.devTracker.config.idleTimeout,
         "maxHeight":   self.config.maxHeight,
         "deviceVideo": self.config.text.deviceVideo,
+        "info":        info,
+        "rawInfo":     rawInfo,
     } )
 }
 

@@ -7,6 +7,7 @@ import (
     _ "github.com/mattn/go-sqlite3"
     "xorm.io/xorm"
     uj "github.com/nanoscopic/ujsonin/v2/mod"
+    log "github.com/sirupsen/logrus"
 )
 
 var gDb *xorm.Engine
@@ -106,6 +107,11 @@ func getReservation( udid string ) (*DbReservation){
 }
 
 func deleteReservation( udid string ) {
+    log.WithFields( log.Fields{
+        "type": "reserve_delete",
+        "udid": censorUuid( udid ),
+    } ).Info("Deleting device reservation")
+    
     rv := DbReservation{
         Udid: udid,
     }
@@ -117,6 +123,12 @@ func deleteReservation( udid string ) {
 }
 
 func deleteReservationWithRid( udid string, rid string ) {
+    log.WithFields( log.Fields{
+        "type": "reserve_delete",
+        "udid": censorUuid( udid ),
+        "rid": rid,
+    } ).Info("Deleting device reservation")
+    
     rv := DbReservation{
         Udid: udid,
     }
@@ -144,6 +156,21 @@ func addReservation( udid string, user string, rid string ) bool {
     return true
 }
 
+func getReservations() ( map[string]DbReservation, error ) {
+    var rs [] DbReservation
+    err := gDb.Find( &rs )
+    if err != nil {
+        return nil, err
+    }
+    
+    rmap := make( map[string]DbReservation )
+    for _, r := range rs {
+        rmap[ r.Udid ] = r
+    }
+    
+    return rmap, nil
+}
+
 func getDevice( udid string ) (*DbDevice) {
     dev := DbDevice{
         Udid: udid,
@@ -156,6 +183,15 @@ func getDevice( udid string ) (*DbDevice) {
         return nil
     }
     return &dev    
+}
+
+func getDevices() ( []DbDevice, error ) {
+    var devices [] DbDevice
+    err := gDb.Find( &devices )
+    if err != nil {
+        return []DbDevice{}, err
+    }
+    return devices, nil
 }
 
 func addProvider( username string, password string ) (bool) {

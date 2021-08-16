@@ -6,6 +6,7 @@ import (
     "encoding/hex"
     mrand "math/rand"
     "net/http"
+    "strings"
     "sync"
     "time"
     ws "github.com/gorilla/websocket"
@@ -111,14 +112,18 @@ func (self *ReqTracker) sendReq( req ProvBase ) (error) {
         reqText = req.asText( 0 )
     }
     
-    fmt.Printf("sending %s\n", reqText )
+    if !strings.Contains( reqText, "ping" ) {
+        fmt.Printf("sending %s\n", reqText )
+    }
     // send the request
     err := self.conn.WriteMessage( ws.TextMessage, []byte(reqText) )
     return err
 }
 
 func (self *ReqTracker) processResp( msgType int, reqText []byte ) {
-    fmt.Printf( "received %s\n", string(reqText) )
+    if !strings.Contains( string(reqText), "pong" ) {
+        fmt.Printf( "received %s\n", string(reqText) )
+    }
     
     if len( reqText ) == 0 {
         return

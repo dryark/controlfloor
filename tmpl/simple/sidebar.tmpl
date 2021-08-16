@@ -1,0 +1,44 @@
+<div class="sidebar" style="position: fixed; z-index:2">
+    <nav>
+        <ul class="sidebar__nav">
+            <li>
+                <a href="/" class="sidebar__nav__link">
+                    <i class="mdi mdi-format-list-checkbox"></i>
+                    <span class="sidebar__nav__text">Device List</span>
+                </a>
+            </li>
+            {{ if ne (default .udid "") "" }}
+            <li>
+                <a href="/devVideo?udid={{html .udid}}" class="sidebar__nav__link">
+                    <i class="mdi mdi-cellphone-play"></i>
+                    <span class="sidebar__nav__text">{{html .deviceVideo}}</span>
+                </a>
+            </li>
+            <li>
+                <a href="/devInfo?udid={{html .udid}}" class="sidebar__nav__link">
+                    <i class="mdi mdi-clipboard-text"></i>
+                    <span class="sidebar__nav__text">Device Details</span>
+                </a>
+            </li>
+            {{ end }}
+            <li>
+                <a href="#" class="sidebar__nav__link">
+                    <i class="mdi mdi-settings"></i>
+                    <span class="sidebar__nav__text">Settings</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="sidebar__nav__link">
+                    <i class="mdi mdi-account-supervisor"></i>
+                    <span class="sidebar__nav__text">Users</span>
+                </a>
+            </li>
+            <li>
+                <a href="/logout" class="sidebar__nav__link">
+                    <i class="mdi mdi-account-circle"></i>
+                    <span class="sidebar__nav__text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>

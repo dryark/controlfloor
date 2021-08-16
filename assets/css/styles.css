@@ -1,6 +1,6 @@
-:root {
+/*:root {
   --sidebar-width: 4.5em;
-}
+}*/
 
 body {
   margin: 0;
@@ -32,7 +32,7 @@ body {
 }
 
 @media (min-width: 572px) {
-  .main {
+  .mainWsidebar {
     margin-left: var(--sidebar-width);
   }
 }

@@ -11,7 +11,7 @@ import (
 
 func initTemplates( r *gin.Engine, config *Config ) {
     r.HTMLRender = ginview.New( goview.Config{
-        Root:         "tmpl",
+        Root:         fmt.Sprintf( "tmpl/%s", config.theme ),
         Extension:    ".tmpl",
         Partials:     []string{"sidebar"},
         Funcs:        createFuncMap(),

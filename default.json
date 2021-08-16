@@ -25,4 +25,5 @@
         deviceVideo: "Device Video"
     }
     disableCache: false
+    theme: "simple"
 }

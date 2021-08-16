@@ -6,6 +6,7 @@ import (
     "encoding/json"
     "github.com/gin-gonic/gin"
     cfauth "github.com/nanoscopic/controlfloor_auth"
+    log "github.com/sirupsen/logrus"
 )
 
 type UserHandler struct {
@@ -73,11 +74,8 @@ func (self *UserHandler) NeedUserAuth( authHandler cfauth.AuthHandler ) gin.Hand
 }
 
 func (self *UserHandler) showUserRoot( c *gin.Context ) {
-    var devices [] DbDevice
-    err := gDb.Find( &devices )
-    if err != nil {
-        panic( err )
-    }
+    devices, err := getDevices()
+    if err != nil { panic( err ) }
     
     output := ""
     for _, device := range devices {
@@ -101,18 +99,33 @@ func (self *UserHandler) showUserRoot( c *gin.Context ) {
         // also Width, Height, ClickWidth, and ClickHeight
     }
     
+    rs, _ := getReservations()
+    if rs == nil {
+        rs = make( map[string]DbReservation )
+    }
+    
+    sCtx := self.sessionManager.GetSession( c )
+    user := self.sessionManager.session.Get( sCtx, "user" ).(string)
+    
     jsont := ""
     for _, device := range devices {
-      provId := self.devTracker.getDevProvId( device.Udid )
-      if provId != 0 {
-        device.Ready = "Yes"
-      } else {
-        device.Ready = "No"
-      }
-      
-      t, _ := json.Marshal( device )
-            
-      jsont += string(t) + ","
+        udid := device.Udid
+        
+        provId := self.devTracker.getDevProvId( udid )
+        if provId != 0 {
+            r, hasR := rs[ udid ]
+            if hasR && r.User != user {
+                device.Ready = "In Use"
+            } else {
+                device.Ready = "Yes"
+            }
+        } else {
+            device.Ready = "No"
+        }
+        
+        t, _ := json.Marshal( device )
+              
+        jsont += string(t) + ","
     }
     if jsont != "" {
         jsont = jsont[:len( jsont )-1]
@@ -179,8 +192,13 @@ func (self *UserHandler) handleImgStream( c *gin.Context ) {
         } )
         return
     }
+    rid, rok := c.GetQuery("rid")
     
-    fmt.Printf("connection to /imgStream udid=%s\n", udid )
+    log.WithFields( log.Fields{
+        "type": "imgstream_start",
+        "udid": censorUuid( udid ),
+        "rid": rid,
+    } ).Info("Image stream connected")
     
     writer := c.Writer
     req := c.Request
@@ -204,5 +222,14 @@ func (self *UserHandler) handleImgStream( c *gin.Context ) {
     
     <- stopChan
     
+    log.WithFields( log.Fields{
+        "type": "imgstream_start",
+        "udid": censorUuid( udid ),
+        "rid": rid,
+    } ).Info("Image stream disconnected")
+    
+    if rok {
+        deleteReservationWithRid( udid, rid )
+    }
     provConn.stopImgStream( udid )
 }

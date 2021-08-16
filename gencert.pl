@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-my $hostname = "localhost";
+my $hostname = "controlfloor.test";
 my $mainip = "127.0.0.1";
 
 my $template = "cert.tmpl";

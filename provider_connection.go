@@ -1,7 +1,7 @@
 package main
 
 import (
-    "fmt"
+    //"fmt"
     //ecies "github.com/ecies/go"
     uj "github.com/nanoscopic/ujsonin/v2/mod"
 )
@@ -23,8 +23,8 @@ func NewProviderConnection( provChan chan ProvBase ) (*ProviderConnection) {
 func (self *ProviderConnection) doPing() {
     ping := &ProvPing{
         onRes: func( root uj.JNode ) {
-            text := root.Get("text").String()
-            fmt.Printf("pong text %s\n", text )
+            //text := root.Get("text").String()
+            //fmt.Printf("pong text %s\n", text )
         },
     }
     self.provChan <- ping

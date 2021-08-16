@@ -115,3 +115,7 @@ func gen_cert() {
     }
     fmt.Println( out )
 }
+
+func censorUuid( uuid string ) (string) {
+    return "***" + uuid[len(uuid)-4:]
+}
