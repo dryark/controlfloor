@@ -8,6 +8,9 @@ import (
     "os/exec"
     uc "github.com/nanoscopic/uclop/mod"
     cfauth "github.com/nanoscopic/controlfloor_auth"
+    swag "github.com/swaggo/gin-swagger"
+    swagFiles "github.com/swaggo/files"
+    _ "github.com/nanoscopic/controlfloor/docs"
 )
 
 func main() {
@@ -85,6 +88,16 @@ func runMain( *uc.Cmd ) {
     th := NewTestHandler( r, sessionManager )
     th.registerTestRoutes()
     
+    swagFunc := swag.WrapHandler( swagFiles.Handler )
+    r.GET("/swagger/*any", func( c *gin.Context ) {
+        path := c.Request.URL.Path
+        if path == "/swagger/" {
+            c.Redirect( 302, "/swagger/index.html" )
+            return
+        }
+        swagFunc( c )      
+    } )
+            
     var err error
     protocol := "http"
     if conf.https {
@@ -119,3 +132,7 @@ func gen_cert() {
 func censorUuid( uuid string ) (string) {
     return "***" + uuid[len(uuid)-4:]
 }
+
+// @title ControlFloor API
+// @version 1.0
+// @description ControlFloor Server API

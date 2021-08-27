@@ -98,7 +98,7 @@
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
     wait();
-    req( 'POST', base + '/devClick', function() {
+    req( 'POST', base + '/device/click', function() {
       unwait();
     }, { udid, x, y } );    
   }
@@ -106,7 +106,7 @@
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
     wait();
-    req( 'POST', base + '/devHardPress', function() {
+    req( 'POST', base + '/device/hardPress', function() {
       unwait();
     }, { udid, x, y } );    
   }
@@ -114,7 +114,7 @@
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
     wait();
-    req( 'POST', base + '/devLongPress', function() {
+    req( 'POST', base + '/device/longPress', function() {
       unwait();
     }, { udid, x, y } );    
   }
@@ -124,7 +124,7 @@
     var x2 = Math.floor( (pos2[0]/displayWid)*clickWid ); 
     var y2 = Math.floor( (pos2[1]/displayHeg)*clickHeg );
     wait();
-    req( 'POST', base + '/devSwipe', function() {
+    req( 'POST', base + '/device/swipe', function() {
       unwait();
     }, { udid, x1, y1, x2, y2, delay } );    
   }
@@ -157,7 +157,7 @@
     //keyqueue = [];
     inRequest = 1;
     wait();
-    req( 'POST', base + '/keys', function() {
+    req( 'POST', base + '/device/keys', function() {
       unwait();
       inRequest = 0;
       if( keyqueue.length ) sendKeys();
@@ -209,7 +209,7 @@
     
     home.onclick = function( event ) {
       wait();
-      req( 'POST', '/devHome', function() {
+      req( 'POST', '/device/home', function() {
         unwait();
       }, { udid } );  
     }
@@ -294,7 +294,7 @@
     }
     
     var wsprot = ( document.location.protocol == 'https:' ) ? "wss" : "ws"; 
-    var url = wsprot+":\/\/"+document.location.host+"\/imgStream?udid={{ html .udid }}";
+    var url = wsprot+":\/\/"+document.location.host+"\/device/imgStream?udid={{ html .udid }}";
     ws = new WebSocket( url );
     ws.onopen = function( event ) {
         console.log("Websocket open");
@@ -340,7 +340,7 @@
         idleSeconds += 3;
         if( idleSeconds > idleTimeout ) {
           ws.close();
-          navigator.sendBeacon( "/devVideoStop?udid="+udid+"&rid="+rid, "" );
+          navigator.sendBeacon( "/device/videoStop?udid="+udid+"&rid="+rid, "" );
           alert("Inactivity timeout");
           document.location.href = '/';
         }
@@ -359,7 +359,7 @@
       if( !gone && /*event.originalEvent == 'visibilitychange' && */event.newState == 'hidden' ) {
         gone = 1;
         console.log("Sending beacon for udid " + udid );
-        navigator.sendBeacon( "/devVideoStop?udid="+udid+"&rid="+rid, "" );
+        navigator.sendBeacon( "/device/videoStop?udid="+udid+"&rid="+rid, "" );
       }
     } );
   }, 1000 );

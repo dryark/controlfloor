@@ -29,6 +29,7 @@ type Config struct {
     text        *ConfigText
     disableCache bool
     theme       string
+    notes       uj.JNode
 }
 
 func (self *Config) String() string {
@@ -101,6 +102,8 @@ func NewConfig( configPath string, defaultsPath string ) (*Config) {
     config.disableCache = GetBool( root, "disableCache" )
     
     config.theme = GetStr( root, "theme" )
+    
+    config.notes = root.Get("notes")
     
     return &config
 }

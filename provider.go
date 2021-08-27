@@ -36,7 +36,7 @@ func (self *ProviderHandler) registerProviderRoutes() (*gin.RouterGroup) {
     r := self.r
     
     fmt.Println("Registering provider routes")
-    r.POST("/register", self.handleRegister )
+    r.POST("/provider/register", self.handleRegister )
     r.GET("/provider/login", self.showProviderLogin )
     r.GET("/provider/logout", self.handleProviderLogout )
     r.POST("/provider/login", self.handleProviderLogin )
@@ -132,9 +132,10 @@ func (self *ReqTracker) processResp( msgType int, reqText []byte ) {
     if c1 != "{" {
         return
     }
-    last := string( []byte{ reqText[ len( reqText ) - 2 ] } )
-    if last != "}" {
-        fmt.Printf("respond not json\n")
+    last1 := string( []byte{ reqText[ len( reqText ) - 1 ] } )
+    last2 := string( []byte{ reqText[ len( reqText ) - 2 ] } )
+    if last1 != "}" && last2 != "}" {
+        fmt.Printf("respond not json; last1=%s\n", last1)
         return
     }
     
@@ -144,7 +145,7 @@ func (self *ReqTracker) processResp( msgType int, reqText []byte ) {
     req := self.reqMap[ int16(id) ]
     resHandler := req.resHandler()
     if resHandler != nil {
-        resHandler( root )
+        resHandler( root, reqText )
     }
     
     self.lock.Lock()
@@ -163,6 +164,8 @@ type ClientMsg struct {
     msg     string
 }
 
+// @Description Provider - Image Stream Websocket
+// @Router /provider/imgStream [GET]
 func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
     //s := getSession( c )
     
@@ -233,6 +236,8 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
     if outSocket != nil { outSocket.Close() }
 }
 
+// @Description Provider - Websocket
+// @Router /provider/ws [GET]
 func (self *ProviderHandler) handleProviderWS( c *gin.Context ) {
     s := self.sessionManager.GetSession( c )
     
@@ -295,6 +300,18 @@ func randHex() (string) {
 	return hex.EncodeToString( b )
 }
 
+type SProviderRegistration struct {
+    Success  bool   `json:"Success"  example:"true"`
+    Password string `json:"Password" example:"huefw3fw3"`
+    Existed  bool   `json:"Existed"  example:"false"`
+}
+
+// @Description Provider - Register
+// @Router /provider/register [POST]
+// @Param regPass formData string true "Registration password"
+// @Param username formData string true "Provider username"
+// @Produce json
+// @Success 200 {object} SProviderRegistration
 func (self *ProviderHandler) handleRegister( c *gin.Context ) {
     pass := c.PostForm("regPass")
     
@@ -329,6 +346,10 @@ type ProviderOb struct {
     Id int64
 }
 
+// @Description Provider - Login
+// @Router /provider/login [POST]
+// @Param user query string true "Username"
+// @Param pass query string true "Password"
 func (self *ProviderHandler) handleProviderLogin( c *gin.Context ) {
     s := self.sessionManager.GetSession( c )
     
@@ -364,6 +385,8 @@ func (self *ProviderHandler) handleProviderLogin( c *gin.Context ) {
     self.showProviderLogin( c )
 }
 
+// @Description Provider - Logout
+// @Router /provider/logout [GET]
 func (self *ProviderHandler) handleProviderLogout( c *gin.Context ) {
     s := self.sessionManager.GetSession( c )
     

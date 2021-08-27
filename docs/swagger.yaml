@@ -1,0 +1,363 @@
+definitions:
+  main.SDeviceInfo:
+    properties:
+      clickHeight:
+        example: 844
+        type: integer
+      clickWidth:
+        example: 390
+        type: integer
+      deviceVideo:
+        example: up
+        type: string
+      name:
+        example: Phone Name
+        type: string
+      provider:
+        example: 1
+        type: integer
+      rawInfo:
+        type: string
+      udid:
+        example: 00008100-001338811EE10033
+        type: string
+      vidHeight:
+        example: 844
+        type: integer
+      vidWidth:
+        example: 390
+        type: integer
+      videoStatus:
+        example: up
+        type: string
+      wdaStatus:
+        example: up
+        type: string
+    type: object
+  main.SProviderRegistration:
+    properties:
+      Existed:
+        example: false
+        type: boolean
+      Password:
+        example: huefw3fw3
+        type: string
+      Success:
+        example: true
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: ControlFloor Server API
+  title: ControlFloor API
+  version: "1.0"
+paths:
+  /:
+    get:
+      summary: Home - Device list
+  /device/click:
+    post:
+      parameters:
+      - description: Device UDID
+        in: formData
+        name: udid
+        required: true
+        type: string
+      - description: x
+        in: formData
+        name: x
+        required: true
+        type: integer
+      - description: "y"
+        in: formData
+        name: "y"
+        required: true
+        type: integer
+      summary: Device - Click coordinate
+  /device/hardPress:
+    post:
+      parameters:
+      - description: Device UDID
+        in: formData
+        name: udid
+        required: true
+        type: string
+      - description: x
+        in: formData
+        name: x
+        required: true
+        type: integer
+      - description: "y"
+        in: formData
+        name: "y"
+        required: true
+        type: integer
+      summary: Device - Hard press coordinate
+  /device/home:
+    post:
+      parameters:
+      - description: Device UDID
+        in: formData
+        name: udid
+        required: true
+        type: string
+      summary: Device click
+  /device/imgStream:
+    get:
+      description: Device - Image Stream Websocket
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      - description: Video Instance ID
+        in: query
+        name: rid
+        required: true
+        type: string
+  /device/info:
+    get:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device - Device info page
+  /device/info/json:
+    get:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SDeviceInfo'
+      summary: Device - Device info JSON
+  /device/keys:
+    post:
+      parameters:
+      - description: Device UDID
+        in: formData
+        name: udid
+        required: true
+        type: string
+      - description: Incrementing unique ID
+        in: formData
+        name: curid
+        required: true
+        type: integer
+      - description: Keys
+        in: formData
+        name: keys
+        required: true
+        type: string
+      - description: Previous keys
+        in: formData
+        name: prevkeys
+        required: true
+        type: string
+      summary: Device - Simulate keystrokes
+  /device/kick:
+    get:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device - Kick device user
+  /device/longPress:
+    post:
+      parameters:
+      - description: Device UDID
+        in: formData
+        name: udid
+        required: true
+        type: string
+      - description: x
+        in: formData
+        name: x
+        required: true
+        type: integer
+      - description: "y"
+        in: formData
+        name: "y"
+        required: true
+        type: integer
+      summary: Device - Long Press coordinate
+  /device/status/exists:
+    post:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device Status - Existence
+  /device/status/info:
+    post:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device Status - Information
+  /device/status/videoStarted:
+    post:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device Status - Video Started
+  /device/status/videoStopped:
+    post:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device Status - Video Stopped
+  /device/status/wdaStarted:
+    post:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device Status - WDA Started
+  /device/status/wdaStopped:
+    post:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device Status - WDA Stopped
+  /device/swipe:
+    post:
+      parameters:
+      - description: Device UDID
+        in: formData
+        name: udid
+        required: true
+        type: string
+      - description: x1
+        in: formData
+        name: x1
+        required: true
+        type: integer
+      - description: y1
+        in: formData
+        name: y1
+        required: true
+        type: integer
+      - description: x2
+        in: formData
+        name: x2
+        required: true
+        type: integer
+      - description: y2
+        in: formData
+        name: y2
+        required: true
+        type: integer
+      - description: Time of swipe
+        in: formData
+        name: delay
+        required: true
+        type: number
+      summary: Device - Swipe
+  /device/video:
+    get:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device - Video Page
+  /device/videoStop:
+    post:
+      parameters:
+      - description: Device UDID
+        in: query
+        name: udid
+        required: true
+        type: string
+      summary: Device - Stop device video
+  /login:
+    post:
+      description: User - Login
+      parameters:
+      - description: Username
+        in: formData
+        name: user
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: pass
+        required: true
+        type: string
+  /logout:
+    post:
+      description: User - Logout
+  /provider/imgStream:
+    get:
+      description: Provider - Image Stream Websocket
+  /provider/login:
+    post:
+      description: Provider - Login
+      parameters:
+      - description: Username
+        in: query
+        name: user
+        required: true
+        type: string
+      - description: Password
+        in: query
+        name: pass
+        required: true
+        type: string
+  /provider/logout:
+    get:
+      description: Provider - Logout
+  /provider/register:
+    post:
+      description: Provider - Register
+      parameters:
+      - description: Registration password
+        in: formData
+        name: regPass
+        required: true
+        type: string
+      - description: Provider username
+        in: formData
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SProviderRegistration'
+  /provider/ws:
+    get:
+      description: Provider - Websocket
+swagger: "2.0"

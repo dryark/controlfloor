@@ -22,7 +22,7 @@ func NewProviderConnection( provChan chan ProvBase ) (*ProviderConnection) {
 
 func (self *ProviderConnection) doPing() {
     ping := &ProvPing{
-        onRes: func( root uj.JNode ) {
+        onRes: func( root uj.JNode, raw []byte ) {
             //text := root.Get("text").String()
             //fmt.Printf("pong text %s\n", text )
         },
@@ -30,7 +30,7 @@ func (self *ProviderConnection) doPing() {
     self.provChan <- ping
 }
 
-func (self *ProviderConnection) doClick( udid string, x int, y int, onDone func( uj.JNode ) ) {
+func (self *ProviderConnection) doClick( udid string, x int, y int, onDone func( uj.JNode, []byte ) ) {
     click := &ProvClick{
         udid: udid,
         x: x,
@@ -58,7 +58,7 @@ func (self *ProviderConnection) doLongPress( udid string, x int, y int ) {
     self.provChan <- click
 }
 
-func (self *ProviderConnection) doHome( udid string, onDone func( uj.JNode ) ) {
+func (self *ProviderConnection) doHome( udid string, onDone func( uj.JNode, []byte ) ) {
     home := &ProvHome{
         udid: udid,
         onRes: onDone,
@@ -66,7 +66,15 @@ func (self *ProviderConnection) doHome( udid string, onDone func( uj.JNode ) ) {
     self.provChan <- home
 }
 
-func (self *ProviderConnection) doKeys( udid string, keys string, curid int, prevkeys string, onDone func( uj.JNode ) ) {
+func (self *ProviderConnection) doSource( udid string, onDone func( uj.JNode, []byte ) ) {
+    source := &ProvSource{
+        udid: udid,
+        onRes: onDone,
+    }
+    self.provChan <- source
+}
+
+func (self *ProviderConnection) doKeys( udid string, keys string, curid int, prevkeys string, onDone func( uj.JNode, []byte ) ) {
     action := &ProvKeys{
         udid: udid,
         keys: keys,
@@ -77,7 +85,7 @@ func (self *ProviderConnection) doKeys( udid string, keys string, curid int, pre
     self.provChan <- action
 }
 
-func (self *ProviderConnection) doSwipe( udid string, x1 int, y1 int, x2 int, y2 int, delay float64, onDone func( uj.JNode ) ) {
+func (self *ProviderConnection) doSwipe( udid string, x1 int, y1 int, x2 int, y2 int, delay float64, onDone func( uj.JNode, []byte ) ) {
     swipe := &ProvSwipe{
         udid: udid,
         x1: x1,

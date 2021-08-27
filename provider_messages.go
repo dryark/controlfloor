@@ -8,14 +8,14 @@ import (
 type ProvBase interface {  
     asText( int16 ) string
     needsResponse() bool
-    resHandler() (func(uj.JNode))
+    resHandler() (func(uj.JNode,[]byte))
 }
 
 type ProvPing struct {
     blah string
-    onRes func( uj.JNode )
+    onRes func( uj.JNode,[]byte )
 }
-func (self *ProvPing) resHandler() (func(uj.JNode) ) { return self.onRes }
+func (self *ProvPing) resHandler() (func(uj.JNode,[]byte) ) { return self.onRes }
 func (self *ProvPing) needsResponse() (bool) { return true }
 func (self *ProvPing) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"ping\"}\n", id)
@@ -25,9 +25,9 @@ type ProvClick struct {
     udid string
     x int
     y int
-    onRes func( uj.JNode )
+    onRes func( uj.JNode,[]byte )
 }
-func (self *ProvClick) resHandler() ( func(data uj.JNode) ) {
+func (self *ProvClick) resHandler() ( func(data uj.JNode,rawData []byte) ) {
     return self.onRes
 }
 func (self *ProvClick) needsResponse() (bool) { return true }
@@ -40,7 +40,7 @@ type ProvHardPress struct {
     x int
     y int
 }
-func (self *ProvHardPress) resHandler() (func(uj.JNode) ) { return nil }
+func (self *ProvHardPress) resHandler() (func(uj.JNode,[]byte) ) { return nil }
 func (self *ProvHardPress) needsResponse() (bool) { return false }
 func (self *ProvHardPress) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"hardPress\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
@@ -51,7 +51,7 @@ type ProvLongPress struct {
     x int
     y int
 }
-func (self *ProvLongPress) resHandler() (func(uj.JNode) ) { return nil }
+func (self *ProvLongPress) resHandler() (func(uj.JNode,[]byte) ) { return nil }
 func (self *ProvLongPress) needsResponse() (bool) { return false }
 func (self *ProvLongPress) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"longPress\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
@@ -59,9 +59,9 @@ func (self *ProvLongPress) asText( id int16 ) (string) {
 
 type ProvHome struct {
     udid string
-    onRes func( uj.JNode )
+    onRes func( uj.JNode,[]byte )
 }
-func (self *ProvHome) resHandler() ( func(data uj.JNode) ) {
+func (self *ProvHome) resHandler() ( func(data uj.JNode,rawData []byte) ) {
     return self.onRes
 }
 func (self *ProvHome) needsResponse() (bool) { return true }
@@ -69,14 +69,26 @@ func (self *ProvHome) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"home\",udid:\"%s\"}\n",id,self.udid)
 }
 
+type ProvSource struct {
+    udid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvSource) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvSource) needsResponse() (bool) { return true }
+func (self *ProvSource) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"source\",udid:\"%s\"}\n",id,self.udid)
+}
+
 type ProvKeys struct {
     udid string
     keys string
     curid int
     prevkeys string
-    onRes func( uj.JNode )
+    onRes func( uj.JNode,[]byte )
 }
-func (self *ProvKeys) resHandler() ( func(data uj.JNode) ) {
+func (self *ProvKeys) resHandler() ( func(data uj.JNode,rawData []byte) ) {
     return self.onRes
 }
 func (self *ProvKeys) needsResponse() (bool) { return true }
@@ -92,9 +104,9 @@ type ProvSwipe struct {
     x2 int
     y2 int
     delay float64
-    onRes func( uj.JNode )
+    onRes func( uj.JNode,[]byte )
 }
-func (self *ProvSwipe) resHandler() ( func(data uj.JNode) ) {
+func (self *ProvSwipe) resHandler() ( func(data uj.JNode,rawData []byte) ) {
     return self.onRes
 }
 func (self *ProvSwipe) needsResponse() (bool) { return true }
@@ -107,7 +119,7 @@ func (self *ProvSwipe) asText( id int16 ) (string) {
 type ProvStartStream struct {
     udid string
 }
-func (self *ProvStartStream) resHandler() (func(uj.JNode) ) { return nil }
+func (self *ProvStartStream) resHandler() (func(uj.JNode,[]byte) ) { return nil }
 func (self *ProvStartStream) needsResponse() (bool) { return false }
 func (self *ProvStartStream) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"startStream\",udid:\"%s\"}\n",id,self.udid)
@@ -117,7 +129,7 @@ type ProvStopStream struct {
     udid string
 }
 
-func (self *ProvStopStream) resHandler() (func(uj.JNode) ) {
+func (self *ProvStopStream) resHandler() (func(uj.JNode,[]byte) ) {
     return nil
 }
 

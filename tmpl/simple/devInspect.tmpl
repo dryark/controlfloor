@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ControlFloor</title>
+
+<link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
+<link rel="stylesheet" href="/assets/css/styles.css" />
+<link rel="stylesheet" href="/assets/css/sidebar.css" />
+<link href="https://unpkg.com/@mountable/spinners@0.0.25/dist/mSpinnerSwirl.css" rel="stylesheet">
+
+<meta charset="utf-8">
+<style>
+  canvas {
+    border: solid 1px black;
+  }
+  #home {
+    font-size:64px;
+  }
+  #render {
+    position: relative;
+    overflow: hidden;
+  }
+  .el, .btn {
+    position: absolute;
+    border: solid 1px black;
+    overflow: hidden;
+    font-size: 12pt;
+  }
+  .btn {
+    background-color: lightblue;
+  }
+  
+</style>
+<script>
+  var udid="{{ html .udid }}";
+  var vidWid={{ html .vidWidth }};
+  var vidHeg={{ html .vidHeight }};
+  var maxHeg={{ html .maxHeight }};
+  var displayWid=0;
+  var displayHeg=0;
+  var base = document.location.protocol + '//' + document.location.host;
+  
+  function getel( id ) {
+    return document.getElementById( id );
+  }
+  function ntext( text ) {
+    return document.createTextNode( text );
+  }
+  function ndiv() {
+    return document.createElement( 'div' );
+  }
+  function filltext( id, text ) {
+    var parent = getel(id);
+    var node = ntext( text );
+    parent.appendChild( node );
+  }
+  function getCursorPosition(canvas, event) {
+    const rect = canvas.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    console.log("x: " + x + " y: " + y)
+    return [x,y];
+  }
+  function req( type, url, handler, body ) {
+    var xhr = new XMLHttpRequest();
+    xhr.open( type, url, true );
+    xhr.responseType = 'json';
+    xhr.onload = function(x) { handler(x,xhr); }
+    if( type == 'POST' && body ) {
+        if( typeof( body ) == 'object' ) {
+            var data = new FormData();
+            var test = {};
+            for( var k in body ) if( body.hasOwnProperty( k ) ) { data.append( k, body[k] ); test[k] = body[k]; }
+            console.log( test );
+            xhr.send( data );
+        }
+        else xhr.send(body);
+    }
+    else xhr.send();
+  }
+  function render( r, src ) {
+    if( !r ) r = getel("render");
+    var x = src.x;
+    var y = src.y;
+    if( y < 0 || y > vidHeg ) return;
+    var w = src.w;
+    var h = src.h;
+    var c = src.c;
+    var type = src.type;
+    var div = ndiv();
+    div.className = "el";
+    div.style.left = x + "px";
+    div.style.top = y + "px";
+    div.style.width = w + "px";
+    div.style.height = h + "px";
+    r.appendChild( div );
+    
+    if( type == "StaticText" && w ) {
+      var label = ntext( src.label );
+      div.appendChild( label );
+    }
+    if( type == "Icon" && src.label && w ) {
+      var label = ntext( src.label );
+      div.appendChild( label );
+    }
+    if( type == "Button" && src.label && w ) {
+      var label = ntext( src.label );
+      div.className = "btn";
+      div.appendChild( label );
+    }
+    
+    if( !c ) return;
+    for( var i=0;i<c.length;i++ ) {
+      render( r, c[i] );
+    }
+  }
+    
+  if( vidHeg < maxHeg ) {
+    displayHeg = vidHeg;
+    displayWid = vidWid;
+  } else {
+    var wOverH = vidWid / vidHeg;
+    displayHeg = maxHeg;
+    displayWid = maxHeg * wOverH;
+  }
+    
+  window.addEventListener("load", function(evt) {
+      var r = getel("render");
+      r.style.width = displayWid + "px";
+      r.style.height = displayHeg + "px";
+      
+      var home = getel("home");
+      home.onclick = function() {
+          var srcbox = getel("sourcebox");
+          srcbox.innerHTML = "";
+          req( 'POST', base + '/device/source', function(x,r) {
+              var json = r.response;
+              var src = json.source;
+              
+              var obj = JSON.parse( src );
+              src = JSON.stringify(obj, null, 2);
+              
+              var textel = ntext( src );
+              
+              srcbox.appendChild( textel );
+              
+              var r = getel("render");
+              r.innerHTML = "";
+              
+              render( r, obj );
+          }, { udid } );  
+      }
+  } );
+</script>
+
+<body>
+    <div id="main" class="main">
+    <table>    
+      <tr>  
+        <td><textarea cols="80" rows="40" id='sourcebox'></textarea></td>
+        <td valign="top"><div id='render'></div></td>
+      </tr>
+    </table><br>
+        <i id='home' class="mdi mdi-home"></i>
+    </div>
+</body>

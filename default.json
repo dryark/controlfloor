@@ -19,7 +19,7 @@
     }
     idleTimeout: "15m"
     video: {
-        maxHeight: 1000
+        maxHeight: 850
     }
     text: {
         deviceVideo: "Device Video"

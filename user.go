@@ -6,7 +6,7 @@ import (
     "encoding/json"
     "github.com/gin-gonic/gin"
     cfauth "github.com/nanoscopic/controlfloor_auth"
-    log "github.com/sirupsen/logrus"
+    //log "github.com/sirupsen/logrus"
 )
 
 type UserHandler struct {
@@ -43,9 +43,6 @@ func (self *UserHandler) registerUserRoutes() (*gin.RouterGroup) {
     uAuth := r.Group("/")
     uAuth.Use( self.NeedUserAuth( self.authHandler ) )
     uAuth.GET("/", self.showUserRoot )
-    uAuth.GET("/imgStream", func( c *gin.Context ) {
-        self.handleImgStream( c )
-    } )
     return uAuth
 }
 
@@ -73,6 +70,8 @@ func (self *UserHandler) NeedUserAuth( authHandler cfauth.AuthHandler ) gin.Hand
     }
 }
 
+// @Summary Home - Device list
+// @Router / [GET]
 func (self *UserHandler) showUserRoot( c *gin.Context ) {
     devices, err := getDevices()
     if err != nil { panic( err ) }
@@ -142,6 +141,8 @@ func (self *UserHandler) showUserLogin( rCtx *gin.Context ) {
     rCtx.HTML( http.StatusOK, "userLogin", gin.H{} )
 }
 
+// @Description User - Logout
+// @Router /logout [POST]
 func (self *UserHandler) handleUserLogout( c *gin.Context ) {
     s := self.sessionManager.GetSession( c )
     
@@ -151,6 +152,10 @@ func (self *UserHandler) handleUserLogout( c *gin.Context ) {
     c.Redirect( 302, "/" )
 }
 
+// @Description User - Login
+// @Router /login [POST]
+// @Param user formData string true "Username"
+// @Param pass formData string true "Password"
 func (self *UserHandler) handleUserLogin( c *gin.Context ) {
     if self.authHandler != nil {
         success := self.authHandler.UserLogin( c )
@@ -181,55 +186,4 @@ func (self *UserHandler) handleUserLogin( c *gin.Context ) {
     }
     
     self.showUserLogin( c )
-}
-
-func (self *UserHandler) handleImgStream( c *gin.Context ) {
-    //s := getSession( c )
-    udid, uok := c.GetQuery("udid")
-    if !uok {
-        c.HTML( http.StatusOK, "error", gin.H{
-            "text": "no uuid set",
-        } )
-        return
-    }
-    rid, rok := c.GetQuery("rid")
-    
-    log.WithFields( log.Fields{
-        "type": "imgstream_start",
-        "udid": censorUuid( udid ),
-        "rid": rid,
-    } ).Info("Image stream connected")
-    
-    writer := c.Writer
-    req := c.Request
-    conn, err := wsupgrader.Upgrade( writer, req, nil )
-    if err != nil {
-        fmt.Println("Failed to set websocket upgrade: %+v", err)
-        return
-    }
-    
-    stopChan := make( chan bool )
-    
-    self.devTracker.setVidStreamOutput( udid, &VidConn{
-        socket: conn,
-        stopChan: stopChan,
-    } )
-    
-    fmt.Printf("sending startStream to provider\n")
-    provId := self.devTracker.getDevProvId( udid )
-    provConn := self.devTracker.getProvConn( provId )
-    provConn.startImgStream( udid )
-    
-    <- stopChan
-    
-    log.WithFields( log.Fields{
-        "type": "imgstream_start",
-        "udid": censorUuid( udid ),
-        "rid": rid,
-    } ).Info("Image stream disconnected")
-    
-    if rok {
-        deleteReservationWithRid( udid, rid )
-    }
-    provConn.stopImgStream( udid )
 }

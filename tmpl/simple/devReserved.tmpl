@@ -9,12 +9,24 @@
 		<link rel="stylesheet"	href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
 		<link rel="stylesheet" href="/assets/css/styles.css" />
 		<link rel="stylesheet" href="/assets/css/sidebar.css" />
+		<style>
+		  body {
+		    font-size: 18pt;
+		  }
+		  i {
+		    font-size: 40px;
+		  }
+		</style>
 	</head>
 	<body>
-		{{template "sidebar" dict "udid" .udid "deviceVideo" .deviceVideo}}
 		<div class="main">
-		    Device is currently reserved by {{ html .user }}<br>
-		    <a href="/devKick?udid={{html .udid}}">Kick user</a>
+		    <center>
+            Device is currently reserved by {{ html .user }}<br>
+            <a href="/devKick?udid={{html .udid}}">Kick user</a><br>
+            <div style="display: inline-block">
+                <a href='/'><i id='back' class="mdi mdi-arrow-left-bold"></i></a>
+            </div>
+        </center>
 		</div>
 	</body>
 </html>
