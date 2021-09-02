@@ -51,6 +51,10 @@
     width: 400px;
     background-color: #e8e7b0;
   }
+  #shutdown {
+    font-size:40px;
+    cursor: pointer;
+  }
 </style>
 <script>
   function getel( id ) {
@@ -142,7 +146,7 @@
     wait();
     req( 'POST', base + '/device/click', function() {
       unwait();
-    }, { udid, x, y } );    
+    }, { udid, x, y } );
   }
   function doHardPress( pos ) {
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
@@ -150,7 +154,7 @@
     wait();
     req( 'POST', base + '/device/hardPress', function() {
       unwait();
-    }, { udid, x, y } );    
+    }, { udid, x, y } );
   }
   function doLongPress( pos ) {
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
@@ -158,7 +162,7 @@
     wait();
     req( 'POST', base + '/device/longPress', function() {
       unwait();
-    }, { udid, x, y } );    
+    }, { udid, x, y } );
   }
   function swipe( pos1, pos2, delay ) {
     var x1 = Math.floor( (pos1[0]/displayWid)*clickWid ); 
@@ -169,6 +173,16 @@
     req( 'POST', base + '/device/swipe', function() {
       unwait();
     }, { udid, x1, y1, x2, y2, delay } );    
+  }
+  function doShutdown() {
+    wait();
+    req( 'POST', base + '/device/shutdown', function() {
+      unwait();
+      location.reload();
+    }, { udid } );    
+  }
+  function videoStop() {
+    req( 'POST', base + "/device/videoStop?udid="+udid+"&rid="+rid, function() {}, {} );    
   }
   var keyqueue = [];
   var prevKeys = [];
@@ -248,6 +262,7 @@
     var ws;
     var loading   = getel("loading");
     var notesbox  = getel("notes");
+    var shutdown  = getel("shutdown");
     
     var ties = {};
     for( var i=0; i<notesjson.length; i++ ) {
@@ -327,6 +342,14 @@
       } else {
         longPress.className = 'mdi mdi-alarm-multiple mInactive';
         mode = 'normal';
+      }
+    }
+    shutdown.onclick = function( event ) {
+      var ok = confirm("This will shutdown/reset the device provider. Are you sure?");
+      if( ok ) {
+        videoStop();
+        if( ws ) ws.close();
+        doShutdown();
       }
     }
     if( ties["longpress"] ) {
@@ -508,6 +531,9 @@
                             <td id="d_udid"></td>
                         </tr>
                         <tr><td colspan=2 id="notes"></td></tr>
+                        <tr><td colspan=2>
+                          <i id='shutdown' class="mdi mdi-bomb"></i>
+                        </tr></tr>
                         <tr>
                           <td colspan=2>
                             <i id="waiter" style="vertical-align: top" class="hidden m-spinner--swirl"></i>

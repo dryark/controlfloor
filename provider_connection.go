@@ -74,6 +74,13 @@ func (self *ProviderConnection) doSource( udid string, onDone func( uj.JNode, []
     self.provChan <- source
 }
 
+func (self *ProviderConnection) doShutdown( onDone func( uj.JNode, []byte ) ) {
+    msg := &ProvShutdown{
+        onRes: onDone,
+    }
+    self.provChan <- msg
+}
+
 func (self *ProviderConnection) doKeys( udid string, keys string, curid int, prevkeys string, onDone func( uj.JNode, []byte ) ) {
     action := &ProvKeys{
         udid: udid,

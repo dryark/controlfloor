@@ -81,6 +81,15 @@ func (self *ProvSource) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"source\",udid:\"%s\"}\n",id,self.udid)
 }
 
+type ProvShutdown struct {
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvShutdown) resHandler() (func(uj.JNode,[]byte) ) { return nil }
+func (self *ProvShutdown) needsResponse() (bool) { return false }
+func (self *ProvShutdown) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"shutdown\"}\n",id)
+}
+
 type ProvKeys struct {
     udid string
     keys string

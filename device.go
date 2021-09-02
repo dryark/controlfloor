@@ -5,10 +5,12 @@ import (
     "fmt"
     "net/http"
     "strconv"
+    "time"
     "math/rand"
     "github.com/gin-gonic/gin"
     uj "github.com/nanoscopic/ujsonin/v2/mod"
     log "github.com/sirupsen/logrus"
+    ws "github.com/gorilla/websocket"
 )
 
 type DevHandler struct {
@@ -57,11 +59,13 @@ func (self *DevHandler) registerDeviceRoutes() {
     uAuth.POST("/device/swipe",     func( c *gin.Context ) { self.handleDevSwipe( c ) } )
     uAuth.POST("/device/keys",      func( c *gin.Context ) { self.handleKeys( c ) } )
     uAuth.POST("/device/source",    func( c *gin.Context ) { self.handleSource( c ) } )
-    
+    uAuth.POST("/device/shutdown",  func( c *gin.Context ) { self.handleShutdown( c ) } )
+      
     uAuth.GET("/device/info",       func( c *gin.Context ) { self.showDevInfo( c ) } )
     uAuth.GET("/device/info/json",  func( c *gin.Context ) { self.showDevInfoJson( c ) } )
     
     uAuth.GET("/device/imgStream",  func( c *gin.Context ) { self.handleImgStream( c ) } )
+    uAuth.GET("/device/ws",         func( c *gin.Context ) { self.handleDevWs( c ) } )
     
     uAuth.GET("/device/video", self.showDevVideo )
     uAuth.GET("/device/reserved", self.showDevReservedTest )
@@ -358,6 +362,51 @@ func (self *DevHandler) handleSource( c *gin.Context ) {
     } )
     
     <- done
+}
+
+// @Summary Device - Shutdown device provider
+// @Router /device/shutdown [GET]
+// @Param udid formData string true "Device UDID"
+func (self *DevHandler) handleShutdown( c *gin.Context ) {
+    pc, udid := self.getPc( c )
+        
+    pc.doShutdown( func( _ uj.JNode, raw []byte ) {} )
+    self.devTracker.clearDevProv( udid )
+    
+    // It will take at least 3 seconds to restart
+    time.Sleep( time.Second * 3 )
+    
+    // wait for the device with the specified UDID to return
+    i := 0
+    for {
+        i++
+        provId := self.devTracker.getDevProvId( udid )
+        if provId == 0 {
+            if i == 30 { break }
+            time.Sleep( time.Second )
+            continue
+        }
+        provConn := self.devTracker.getProvConn( provId )
+        if provConn == nil {
+            if i == 30 { break }
+            time.Sleep( time.Second )
+            continue
+        }
+        status := self.devTracker.getDevStatus( udid )
+        if status.video == false {
+            if i == 30 { break }
+            time.Sleep( time.Second )
+            continue
+        }
+        c.Writer.Header().Set("Content-Type", "text/json; charset=utf-8")
+        c.Writer.WriteHeader(200)
+        c.Writer.Write( []byte("{success:true}") )
+        return
+    }
+    
+    c.Writer.Header().Set("Content-Type", "text/json; charset=utf-8")
+    c.Writer.WriteHeader(200)
+    c.Writer.Write( []byte("{success:false}") )
 }
 
 func (self *DevHandler) handleDevPing( c *gin.Context ) {
@@ -662,7 +711,15 @@ func (self *DevHandler) handleImgStream( c *gin.Context ) {
     
     fmt.Printf("sending startStream to provider\n")
     provId := self.devTracker.getDevProvId( udid )
+    if provId == 0 {
+        fmt.Println("Device not yet provided")
+        return
+    }
     provConn := self.devTracker.getProvConn( provId )
+    if provConn == nil {
+        fmt.Println("Device not yet provided")
+        return
+    }
     provConn.startImgStream( udid )
     
     <- stopChan
@@ -677,4 +734,70 @@ func (self *DevHandler) handleImgStream( c *gin.Context ) {
         deleteReservationWithRid( udid, rid )
     }
     provConn.stopImgStream( udid )
+}
+
+type WsResponse interface {
+    String() string
+}
+
+type SyncResponse struct {
+    id int
+}
+
+func ( self SyncResponse ) String() string {
+    return ""
+}
+
+// @Description Device - Device Command Websocket
+// @Router /device/ws [GET]
+// @Param udid query string true "Device UDID"
+func (self *DevHandler) handleDevWs( c *gin.Context ) {
+    udid, uok := c.GetQuery("udid")
+    if !uok {
+        c.HTML( http.StatusOK, "error", gin.H{
+            "text": "no uuid set",
+        } )
+        return
+    }
+    
+    log.WithFields( log.Fields{
+        "type": "devws_start",
+        "udid": censorUuid( udid ),
+    } ).Info("Device ws connected")
+    
+    writer := c.Writer
+    req := c.Request
+    conn, err := wsupgrader.Upgrade( writer, req, nil )
+    if err != nil {
+        fmt.Println("Failed to set websocket upgrade: %+v", err)
+        return
+    }
+    
+    for {
+        t, msg, err := conn.ReadMessage()
+        if err != nil {
+            fmt.Printf("Error reading from ws\n")
+            break
+        }
+        if t == ws.TextMessage {
+            //tMsg := string( msg )
+            b1 := []byte{ msg[0] }
+            if string(b1) == "{" {
+                root, _ := uj.Parse( msg )
+                id := root.Get("id").Int()
+                mType := root.Get("type").String()
+                var resp WsResponse
+                if mType == "timesync" {
+                    resp = SyncResponse{id:id}
+                }
+                if resp != nil {
+                    respStr := resp.String()
+                    err := conn.WriteMessage( ws.TextMessage, []byte( respStr ) )
+                    if err != nil {
+                        fmt.Printf("Error writing to ws\n")
+                    }
+                }
+            }
+        }
+    }
 }
