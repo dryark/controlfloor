@@ -55,6 +55,18 @@
     font-size:40px;
     cursor: pointer;
   }
+  #shutdown:hover:after {
+    font-size: 12pt;
+    content: "Reset device provision. Clicking this will reset the device control and video. If the device is not responding to clicking or video is not shown click this to reset. It will take around 30 seconds to reset.";
+    display: block;
+    position: relative;
+    top: 0px;
+    left: 40px;
+    width: 300px;
+    padding: 10px;
+    background: #e8e7b0;
+    border: solid 2px blue;
+  }
 </style>
 <script>
   function getel( id ) {
@@ -80,11 +92,11 @@
   }
   var session='';
   var udid="{{ html .udid }}";
-  var clickWid={{ html .clickWidth }};
-  var clickHeg={{ html .clickHeight }};
-  var vidWid={{ html .vidWidth }};
-  var vidHeg={{ html .vidHeight }};
-  var maxHeg={{ html .maxHeight }};
+  var clickWid={{ html .clickWidth }}*1;
+  var clickHeg={{ html .clickHeight }}*1;
+  var vidWid={{ html .vidWidth }}*1;
+  var vidHeg={{ html .vidHeight }}*1;
+  var maxHeg={{ html .maxHeight }}*1;
   var displayWid=0;
   var displayHeg=0;
   var base = document.location.protocol + '//' + document.location.host;
@@ -269,8 +281,9 @@
       var anote = notesjson[i];
       var notediv = ndiv();
       notediv.className = "note";
-      var notetext = ntext( anote.short );
-      notediv.appendChild( notetext );
+      //var notetext = ntext( anote.short );
+      //notediv.appendChild( notetext );
+      notediv.innerHTML = anote.short;
       
       var detholder = ndiv();
       detholder.className = "detholder hidden";
@@ -432,9 +445,8 @@
           var image = new Image();
           var url;
           image.onload = function() {
-            //ctx.clearRect(0, 0, canvas.width, canvas.height);
             URL.revokeObjectURL( url );
-            ctx.drawImage(image, 0, 0, Math.floor(displayWid), Math.floor(displayHeg) );
+            ctx.drawImage(image, 0, 0, Math.floor(displayWid)+1, Math.floor(displayHeg) );
           };
           image.onerror = function( e ) {
             console.log('Error during loading image:', e);

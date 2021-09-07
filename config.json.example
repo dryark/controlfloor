@@ -15,4 +15,21 @@
         //   device video in CF
         maxHeight: 1000
     }
+    
+    notes: [
+        {
+            short: "NOTE: Password fields"
+            long: "Password fields and the text entered into them are invisible on the display. You can still select them by clicking where they are, and enter text into them using the keyboard, but you will not be able to see the text as you are entering it."
+        }
+        {
+            short: "<i style='font-size: 30px; vertical-align: middle;' class='mdi mdi-anvil mInactive'></i> Firm press"
+            long: "The anchor icon causes clicks on the screen to become 'Firm Presses' on the device. It is active when the icon is red."
+            tie: "hardpress"
+        }
+        {
+            short: "<i style='font-size: 30px; vertical-align: middle;' class='mdi mdi-alarm mInactive'></i> Long press"
+            long: "The clock icon causes clicks on the screen to become 'Long Presses' on the device. A 'long press' is equivalent to holding your finger down on the device for a few seconds. It is active when the icon is red."
+            tie: "longpress"
+        }
+    ]
 }
