@@ -673,6 +673,16 @@ func (self *DevHandler) handleDevStatus( c *gin.Context, ) {
     c.JSON( http.StatusOK, nok )
 }
 
+// Create a JSON message stating current time from server point of view
+func timeStampMessage() []byte {
+    return []byte("{}")
+}
+
+// Parse time response from client to determine their time offset
+func parseTimeResult( response []byte ) {
+    
+}
+
 // @Description Device - Image Stream Websocket
 // @Router /device/imgStream [GET]
 // @Param udid query string true "Device UDID"
@@ -701,6 +711,10 @@ func (self *DevHandler) handleImgStream( c *gin.Context ) {
         fmt.Println("Failed to set websocket upgrade: %+v", err)
         return
     }
+    
+    //conn.WriteMessage( ws.TextMessage, timeStampMessage() )
+    //_, data, _ := conn.ReadMessage()
+    //parseTimeResult( data )
     
     stopChan := make( chan bool )
     

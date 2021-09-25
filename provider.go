@@ -209,25 +209,64 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
             }
         }()
     }
+    var lock sync.Mutex
+    latestFrame := []byte{}
+    frameType := 0
+    frameReady := make( chan bool )
+    // Consume incoming frames as fast as possible only ever holding onto the latest frame
+    go func() {
+        for {
+            t, data, err := conn.ReadMessage()
+            fmt.Printf("Got frame\n")
+            if err != nil {
+                conn = nil
+                frameReady <- true
+                break
+            }
+            lock.Lock()
+            latestFrame = data
+            frameType = t
+            lock.Unlock()
+            frameReady <- false
+            
+            select {
+                case msg := <- msgChan:
+                    outSocket.WriteMessage( ws.TextMessage, []byte(msg.msg) )
+                    if msg.msgType == CMKick {
+                        frameReady <- true
+                        break
+                    }
+                default:
+            }
+        }
+    }()
+    
+    // Whenever a frame is ready send the latest frame
     for {
-        t, data, err := conn.ReadMessage()
-        if err != nil {
-            conn = nil
+        finished := <- frameReady
+        if finished {
             break
         }
-        err = outSocket.WriteMessage( t, data )
+        lock.Lock()
+        toSend := latestFrame
+        t := frameType
+        latestFrame = []byte{} // Set to empty to prevent sending a replaced frame
+        lock.Unlock()
+        
+        // Don't send a used frame
+        if len( toSend ) == 0 {
+            continue
+        }
+        fmt.Printf("Sending frame to client\n")
+        err = outSocket.WriteMessage( t, toSend )
         if err != nil {
             outSocket = nil
             provConn.stopImgStream( udid )
             break
         }
         
-        select {
-            case msg := <- msgChan:
-                outSocket.WriteMessage( ws.TextMessage, []byte(msg.msg) )
-                if msg.msgType == CMKick { break }
-            default:       
-        }
+        // Sleep for the time expected for the client to receive the frame
+        // TODO
     }
     
     self.devTracker.deleteClient( udid )
