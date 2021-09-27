@@ -675,12 +675,33 @@ func (self *DevHandler) handleDevStatus( c *gin.Context, ) {
 
 // Create a JSON message stating current time from server point of view
 func timeStampMessage() []byte {
-    return []byte("{}")
+    nowMilli := time.Now().UnixMilli()
+    return []byte( fmt.Sprintf( "{\"type\":\"sync\",\"serverTime\":\"%d\"}",nowMilli ) )
 }
 
 // Parse time response from client to determine their time offset
-func parseTimeResult( response []byte ) {
+func parseTimeResult( response []byte ) int64 {
+    nowMilli := time.Now().UnixMilli()
+    fmt.Printf("Response from browser: %s\n", string( response ) )
+    root, _ := uj.Parse( response )
     
+    clientTimeStr := root.Get("clientTime").String()
+    clientTime, _ := strconv.ParseInt(clientTimeStr, 10, 64)
+        
+    sentTimeStr := root.Get("sentTime").String()
+    sentTime, _ := strconv.ParseInt(sentTimeStr, 10, 64)
+    
+    fmt.Printf("Client time:%s\n", clientTimeStr )
+    
+    fullMilli := nowMilli - sentTime
+    milliToClient := fullMilli / 2
+    fmt.Printf("Milliseconds to client:%d\n", milliToClient )
+    
+    clientEstimate := sentTime + milliToClient
+    clientDiff := clientEstimate - clientTime
+    fmt.Printf("Client Offset:%d\n", clientDiff )
+    
+    return clientDiff
 }
 
 // @Description Device - Image Stream Websocket
@@ -712,15 +733,16 @@ func (self *DevHandler) handleImgStream( c *gin.Context ) {
         return
     }
     
-    //conn.WriteMessage( ws.TextMessage, timeStampMessage() )
-    //_, data, _ := conn.ReadMessage()
-    //parseTimeResult( data )
+    conn.WriteMessage( ws.TextMessage, timeStampMessage() )
+    _, data, _ := conn.ReadMessage()
+    clientOffset := parseTimeResult( data )
     
     stopChan := make( chan bool )
     
     self.devTracker.setVidStreamOutput( udid, &VidConn{
         socket: conn,
         stopChan: stopChan,
+        offset: clientOffset,
     } )
     
     fmt.Printf("sending startStream to provider\n")

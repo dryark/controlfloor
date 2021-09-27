@@ -6,6 +6,7 @@ import (
     "encoding/hex"
     mrand "math/rand"
     "net/http"
+    "strconv"
     "strings"
     "sync"
     "time"
@@ -195,11 +196,12 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
     
     vidConn := self.devTracker.getVidStreamOutput( udid )
     outSocket := vidConn.socket
+    clientOffset := vidConn.offset
     
     msgChan := make( chan ClientMsg )
     self.devTracker.addClient( udid, msgChan )
     
-    if outSocket != nil {
+    /*if outSocket != nil {
         go func() {
             for {
                 if _, _, err := outSocket.NextReader(); err != nil {
@@ -208,16 +210,16 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
                 }
             }
         }()
-    }
+    }*/
     var lock sync.Mutex
     latestFrame := []byte{}
     frameType := 0
-    frameReady := make( chan bool )
+    frameReady := make( chan bool, 5 )
     // Consume incoming frames as fast as possible only ever holding onto the latest frame
     go func() {
         for {
             t, data, err := conn.ReadMessage()
-            fmt.Printf("Got frame\n")
+            //fmt.Printf("Got frame\n")
             if err != nil {
                 conn = nil
                 frameReady <- true
@@ -241,6 +243,32 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
         }
     }()
     
+    var frameSleep int32
+    frameSleep = 0
+    
+    go func() {
+        for {
+            _, data, err := outSocket.ReadMessage()
+            if err != nil {
+                break
+            }
+            root, _ := uj.Parse( data )
+            bpsNode := root.Get("bps")
+            if bpsNode != nil {
+                avgFrameStr := root.Get("avgFrame").String()
+                avgFrame, _ := strconv.ParseInt(avgFrameStr, 10, 64)
+                
+                bpsStr := bpsNode.String()
+                bps, _ := strconv.ParseInt(bpsStr, 10, 64)
+                
+                fpsMax := ( float64(bps) / float64(avgFrame) ) * 0.75
+                delayMs := float32(1000) / float32(fpsMax)
+                //fmt.Printf("fpsMax: %d ; delayMs: %d\n", fpsMax, delayMs )
+                frameSleep = int32( delayMs )
+            }
+        }
+    }()
+    
     // Whenever a frame is ready send the latest frame
     for {
         finished := <- frameReady
@@ -257,7 +285,14 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
         if len( toSend ) == 0 {
             continue
         }
-        fmt.Printf("Sending frame to client\n")
+        //fmt.Printf("Sending frame to client\n")
+        
+        if t != ws.TextMessage {
+            nowMilli := time.Now().UnixMilli() + clientOffset
+            nowBytes := []byte( fmt.Sprintf("%*d",100,nowMilli) )
+            toSend = append( toSend, nowBytes... )
+        }
+        
         err = outSocket.WriteMessage( t, toSend )
         if err != nil {
             outSocket = nil
@@ -265,8 +300,28 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
             break
         }
         
+        // Empty the ready message channel
+        done := false
+        exitLoop := false
+        for {
+            select {
+                case finished = <- frameReady:
+                    if finished {
+                        done = true
+                    }
+                default:
+                    exitLoop = true
+            }
+            if exitLoop || done {
+                break
+            }
+        }
+        if done { break }
+        
         // Sleep for the time expected for the client to receive the frame
-        // TODO
+        if frameSleep != 0 {
+            time.Sleep( time.Millisecond * time.Duration( frameSleep ) )
+        }
     }
     
     self.devTracker.deleteClient( udid )

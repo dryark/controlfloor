@@ -8,6 +8,7 @@ import (
 type VidConn struct {
     socket *ws.Conn
     stopChan chan bool
+    offset int64
 }
 
 type DevStatus struct {

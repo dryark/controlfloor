@@ -275,6 +275,8 @@
     var loading   = getel("loading");
     var notesbox  = getel("notes");
     var shutdown  = getel("shutdown");
+    var sizes = [];
+    var times = [];
     
     var ties = {};
     for( var i=0; i<notesjson.length; i++ ) {
@@ -442,6 +444,7 @@
     }
     ws.onmessage = function( event ) {
         if( event.data instanceof Blob ) {
+          var recvTime = new Date().getTime();
           var image = new Image();
           var url;
           image.onload = function() {
@@ -452,6 +455,33 @@
             console.log('Error during loading image:', e);
           }
           var blob = event.data;
+          var imgData = blob.slice( 0, -100, "image/jpeg" );
+          blob.slice( -100, blob.size, "" ).text().then( serverTimeStr => {
+              //console.log( "serverTimeStr " + serverTimeStr );
+              var serverTime = parseInt( serverTimeStr );
+              var diff = recvTime - serverTime;
+              //console.log( recvTime + " - " + serverTime + " = " + diff );
+              
+              //var bpms = (blob.size-100) / diff;
+              //var bps = bpms * 1000;
+              //console.log( "bps " + bps );
+              sizes.push( blob.size - 100 );
+              times.push( diff );
+              if( sizes.length == 5 ) {
+                  var totSize = 0;
+                  var totTime = 0;
+                  for( var i=0;i<5;i++ ) {
+                      totSize += sizes[i];
+                      totTime += times[i];
+                  }
+                  var bps = Math.floor( totSize / totTime * 1000 );
+                  console.log("bps " + bps);
+                  sizes = [];
+                  times = [];
+                  var avgFrame = Math.floor( totSize / 5 );
+                  ws.send( "{\"bps\":\"" + bps + "\",\"avgFrame\":\"" + avgFrame + "\"}" );
+              }
+          } );
           
           url = URL.createObjectURL( blob );
           image.src = url;
@@ -461,9 +491,19 @@
             if( typeof data === 'string' ) {
                 var json = JSON.parse( data );
                 var type = json.type;
-                if( type && type == 'kick' ) {
-                    alert("You have been kicked");
-                    document.location.href = "/";
+                if( type ) {
+                    if( type == 'kick' ) {
+                        alert("You have been kicked");
+                        document.location.href = "/";
+                    }
+                    if( type == 'sync' ) {
+                        var serverTime = json.serverTime;
+                        console.log( "serverTime is " + serverTime );
+                        var ourTime = new Date().getTime();
+                        console.log( "ourTime is " + ourTime );
+                        
+                        ws.send( "{\"clientTime\":\"" + ourTime + "\",\"sentTime\":\"" + serverTime + "\"}" );
+                    }
                 }
             }
             //console.log( event.data );
