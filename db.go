@@ -27,6 +27,7 @@ type DbDevice struct {
     ClickWidth  int
     ClickHeight int
     Ready       string `xorm:"-"`
+    WdaPort     int
 }
 func (DbDevice) TableName() string {
     return "device"
@@ -234,6 +235,17 @@ func updateDeviceInfo( udid string, info string, pId int64 ) {
         Name: devName,
         JsonInfo: info,
         ProviderId: pId,
+    }
+    _, err := gDb.ID( udid ).Update( &dev ) // Cols("JsonInfo", "Name", "ProviderId" )
+    if err != nil {
+        panic( err )
+    }
+}
+
+func updateDeviceWdaPort( udid string, port int ) {
+    dev := DbDevice{
+        Udid: udid,
+        WdaPort: port,
     }
     _, err := gDb.ID( udid ).Update( &dev ) // Cols("JsonInfo", "Name", "ProviderId" )
     if err != nil {

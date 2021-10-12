@@ -74,6 +74,7 @@ func (self *DevHandler) registerDeviceRoutes() {
     
     uAuth.GET("/device/ping", self.handleDevPing )
     uAuth.GET("/device/inspect", self.showDevInspect )
+    uAuth.GET("/device/wdaPort", self.showWdaPort )
 }
 
 type SRawInfo struct {
@@ -103,8 +104,41 @@ type SDeviceInfo struct {
     Provider    int    `json:"provider"    example:"1"`
     RawInfo     string `json:"rawInfo"`
     WdaStatus   string `json:"wdaStatus"   example:"up"`
+    CfaStatus   string `json:"cfaStatus"   example:"up"`
     VideoStatus string `json:"videoStatus" example:"up"`
     DeviceVideo string `json:"deviceVideo" example:"up"`
+}
+
+type SDeviceWdaPort struct {
+    Udid        string `json:"udid"        example:"00008100-001338811EE10033"`
+    WdaPort     int    `json:"wdaPort"    example:"8107"`
+}
+
+func (self *DevHandler) showWdaPort( c *gin.Context ) {
+    udid, uok := c.GetQuery("udid")
+    if !uok {
+        c.JSON( http.StatusOK, SDeviceInfoFail{
+            Success: false,
+            Err: "Must pass udid",
+        } )
+        return
+    }
+    
+    dev := getDevice( udid )
+    if dev == nil {
+        c.JSON( http.StatusOK, SDeviceInfoFail{
+            Success: false,
+            Err: "No device with that udid",
+        } )
+        return
+    }
+    
+    port := dev.WdaPort
+    
+    c.JSON( http.StatusOK, SDeviceWdaPort{
+        Udid:    udid,
+        WdaPort: port,
+    } )
 }
 
 // @Summary Device - Device info JSON
@@ -135,10 +169,13 @@ func (self *DevHandler) showDevInfoJson( c *gin.Context ) {
     
     stat := self.devTracker.getDevStatus( udid )
     wdaUp := "-"
+    cfaUp := "-"
     videoUp := "-"
     if stat != nil {
         wdaUp = "up"
         if !stat.wda { wdaUp = "down" }
+        cfaUp = "up"
+        if !stat.cfa { cfaUp = "down" }
         videoUp = "up"
         if !stat.video { videoUp = "down" }
     }
@@ -155,6 +192,7 @@ func (self *DevHandler) showDevInfoJson( c *gin.Context ) {
         Provider:    int(provId),
         RawInfo:     info,
         WdaStatus:   wdaUp,
+        CfaStatus:   cfaUp,
         VideoStatus: videoUp,
         DeviceVideo: self.config.text.deviceVideo,
     } )
@@ -193,10 +231,13 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
     
     stat := self.devTracker.getDevStatus( udid )
     wdaUp := "-"
+    cfaUp := "-"
     videoUp := "-"
     if stat != nil {
         wdaUp = "up"
         if !stat.wda { wdaUp = "down" }
+        cfaUp = "up"
+        if !stat.cfa { cfaUp = "down" }
         videoUp = "up"
         if !stat.video { videoUp = "down" }
     }
@@ -213,6 +254,7 @@ func (self *DevHandler) showDevInfo( c *gin.Context ) {
         "provider":    provId,
         "info":        info,
         "wdaStatus":   wdaUp,
+        "cfaStatus":   cfaUp,
         "videoStatus": videoUp,
         "deviceVideo": self.config.text.deviceVideo,
     } )
@@ -636,14 +678,28 @@ func (self *DevHandler) handleDevStatus( c *gin.Context, ) {
         return
     }
     if variant == "wdaStarted" {
-        fmt.Printf("WDA started for %s\n", udid )
+        port, _ := strconv.Atoi( c.PostForm("port") )
+        fmt.Printf("WDA started for %s; port %d\n", udid, port )
         self.devTracker.setDevStatus( udid, "wda", true )
+        updateDeviceWdaPort( udid, port )
         c.JSON( http.StatusOK, ok )
         return
     }
     if variant == "wdaStopped" {
         fmt.Printf("WDA stopped for %s\n", udid )
         self.devTracker.setDevStatus( udid, "wda", false )
+        c.JSON( http.StatusOK, ok )
+        return
+    }
+    if variant == "cfaStarted" {
+        fmt.Printf("CFA started for %s\n", udid )
+        self.devTracker.setDevStatus( udid, "cfa", true )
+        c.JSON( http.StatusOK, ok )
+        return
+    }
+    if variant == "cfaStopped" {
+        fmt.Printf("CFA stopped for %s\n", udid )
+        self.devTracker.setDevStatus( udid, "cfa", false )
         c.JSON( http.StatusOK, ok )
         return
     }

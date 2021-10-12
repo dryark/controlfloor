@@ -13,6 +13,7 @@ type VidConn struct {
 
 type DevStatus struct {
     wda   bool
+    cfa   bool
     video bool
 }
 
@@ -89,6 +90,10 @@ func (self *DevTracker) setDevStatus( udid string, service string, status bool )
     }
     if service == "wda" {
         stat.wda = status
+        return
+    }
+    if service == "cfa" {
+        stat.cfa = status
         return
     }
     if service == "video" {
