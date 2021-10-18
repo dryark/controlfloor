@@ -737,6 +737,8 @@ func timeStampMessage() []byte {
 
 // Parse time response from client to determine their time offset
 func parseTimeResult( response []byte ) int64 {
+    // [server time = sentTime] .... sending ... arrival at client [client time = clientTime] .... back .... nowMilli
+  
     nowMilli := time.Now().UnixMilli()
     fmt.Printf("Response from browser: %s\n", string( response ) )
     root, _ := uj.Parse( response )
@@ -753,8 +755,11 @@ func parseTimeResult( response []byte ) int64 {
     milliToClient := fullMilli / 2
     fmt.Printf("Milliseconds to client:%d\n", milliToClient )
     
+    // What we estimate client time should be
     clientEstimate := sentTime + milliToClient
-    clientDiff := clientEstimate - clientTime
+    
+    clientDiff := clientTime - clientEstimate
+    
     fmt.Printf("Client Offset:%d\n", clientDiff )
     
     return clientDiff
