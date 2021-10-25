@@ -460,12 +460,13 @@
               //console.log( "serverTimeStr " + serverTimeStr );
               var serverTime = parseInt( serverTimeStr );
               var diff = recvTime - serverTime;
+              if( diff < 0 ) diff = 0;
               //console.log( recvTime + " - " + serverTime + " = " + diff );
               
               //var bpms = (blob.size-100) / diff;
               //var bps = bpms * 1000;
               //console.log( "bps " + bps );
-              sizes.push( blob.size - 100 );
+              sizes.push( blob.size );
               times.push( diff );
               if( sizes.length == 5 ) {
                   var totSize = 0;
@@ -475,6 +476,9 @@
                       totTime += times[i];
                   }
                   var bps = Math.floor( totSize / totTime * 1000 );
+                  if( bps > 10000000 ) {
+                      bps = 10000000;
+                  }
                   console.log("bps " + bps);
                   sizes = [];
                   times = [];
@@ -489,20 +493,44 @@
         else {
             var data = event.data;
             if( typeof data === 'string' ) {
-                var json = JSON.parse( data );
-                var type = json.type;
-                if( type ) {
-                    if( type == 'kick' ) {
-                        alert("You have been kicked");
-                        document.location.href = "/";
+                var recvTime = new Date().getTime();
+                var l1 = data[0];
+                if( l1 >= '0' && l1 <= '9' ) {
+                    var serverTime = parseInt( data );
+                    var diff = recvTime - serverTime;
+                    console.log( "latency:" + diff );
+                }
+                else if( l1 == '{' ) {
+                    var json = JSON.parse( data );
+                    var type = json.type;
+                    if( type ) {
+                        if( type == 'kick' ) {
+                            alert("You have been kicked");
+                            document.location.href = "/";
+                        }
+                        if( type == 'sync' ) {
+                            var serverTime = json.serverTime;
+                            //console.log( "serverTime is " + serverTime );
+                            var ourTime = Date.now();//new Date().getTime();
+                            //console.log( "ourTime is " + ourTime );
+                            
+                            var diff = ourTime - serverTime;
+                            
+                            ws.send( "{\"clientTime\":\"" + ourTime + "\",\"sentTime\":\"" + serverTime + "\"}" );
+                            
+                            console.log( "latency + time offset = " + diff );
+                        }
                     }
-                    if( type == 'sync' ) {
-                        var serverTime = json.serverTime;
-                        console.log( "serverTime is " + serverTime );
-                        var ourTime = new Date().getTime();
-                        console.log( "ourTime is " + ourTime );
-                        
+                } else {
+                    var parts = data.split(',');
+                    if( parts[0] == 'sync' ) {
+                        var serverTime = parts[1];
+                        var ourTime = Date.now();//new Date().getTime();
+                        var diff = ourTime - serverTime;
+                            
                         ws.send( "{\"clientTime\":\"" + ourTime + "\",\"sentTime\":\"" + serverTime + "\"}" );
+                        
+                        console.log( "latency + time offset = " + diff );
                     }
                 }
             }

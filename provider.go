@@ -4,6 +4,7 @@ import (
     "crypto/rand"
     "fmt"
     "encoding/hex"
+    "io"
     mrand "math/rand"
     "net/http"
     "strconv"
@@ -260,15 +261,18 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
                 
                 bpsStr := bpsNode.String()
                 bps, _ := strconv.ParseInt(bpsStr, 10, 64)
-                
-                fpsMax := ( float64(bps) / float64(avgFrame) ) * 0.75
-                delayMs := float32(1000) / float32(fpsMax)
-                //fmt.Printf("fpsMax: %d ; delayMs: %d\n", fpsMax, delayMs )
-                frameSleep = int32( delayMs )
+                if bps != 10000000 {
+                    fpsMax := ( float64(bps) / float64(avgFrame) ) * 0.75
+                    delayMs := float32(1000) / float32(fpsMax)
+                    //fmt.Printf("fpsMax: %d ; delayMs: %d\n", fpsMax, delayMs )
+                    frameSleep = int32( delayMs )
+                }
             }
         }
     }()
     
+    doExit := false
+    sending := false
     // Whenever a frame is ready send the latest frame
     for {
         finished := <- frameReady
@@ -287,17 +291,48 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
         }
         //fmt.Printf("Sending frame to client\n")
         
-        if t != ws.TextMessage {
-            nowMilli := time.Now().UnixMilli() + clientOffset
-            nowBytes := []byte( fmt.Sprintf("%*d",100,nowMilli) )
-            toSend = append( toSend, nowBytes... )
-        }
+        // Don't try to send another frame if one has already been sent
+        if !sending {
+            sending = true
+            
+            var writer io.WriteCloser
+            var err error
+            if t != ws.TextMessage {
+                writer, err = outSocket.NextWriter( ws.TextMessage )
+                if err == nil {
+                    nowMilli := time.Now().UnixMilli() + clientOffset
+                    nowBytes := []byte( strconv.FormatInt( nowMilli, 10 ) )
+                    writer.Write( nowBytes )
+                    writer.Close()
+                    
+                    writer, err = outSocket.NextWriter( t )
+                    if err == nil {
+                        nowMilli = time.Now().UnixMilli() + clientOffset
+                        nowBytes = []byte( fmt.Sprintf("%*d",100,nowMilli) )
+                        toSend = append( toSend, nowBytes... )
+                    }
+                }
+            } else {
+                writer, err = outSocket.NextWriter( t )
+            }
+            if err != nil {
+                outSocket = nil
+                provConn.stopImgStream( udid )
+                break
+            }
         
-        err = outSocket.WriteMessage( t, toSend )
-        if err != nil {
-            outSocket = nil
-            provConn.stopImgStream( udid )
-            break
+            go func() {
+                _, err = writer.Write( toSend )
+                if err == nil {
+                    err = writer.Close()
+                }
+                if err != nil {
+                    outSocket = nil
+                    provConn.stopImgStream( udid )
+                    doExit = true
+                }
+                sending = false
+            }()
         }
         
         // Empty the ready message channel
@@ -322,6 +357,7 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
         if frameSleep != 0 {
             time.Sleep( time.Millisecond * time.Duration( frameSleep ) )
         }
+        if doExit { break }
     }
     
     self.devTracker.deleteClient( udid )

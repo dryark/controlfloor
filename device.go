@@ -732,7 +732,9 @@ func (self *DevHandler) handleDevStatus( c *gin.Context, ) {
 // Create a JSON message stating current time from server point of view
 func timeStampMessage() []byte {
     nowMilli := time.Now().UnixMilli()
-    return []byte( fmt.Sprintf( "{\"type\":\"sync\",\"serverTime\":\"%d\"}",nowMilli ) )
+    //return []byte( fmt.Sprintf( "{\"type\":\"sync\",\"serverTime\":\"%d\"}",nowMilli ) )
+    //return []byte( fmt.Sprintf( "sync,%d",nowMilli ) )
+    return []byte( "sync," + strconv.FormatInt( nowMilli, 10 ) )
 }
 
 // Parse time response from client to determine their time offset
@@ -753,7 +755,13 @@ func parseTimeResult( response []byte ) int64 {
     
     fullMilli := nowMilli - sentTime
     milliToClient := fullMilli / 2
-    fmt.Printf("Milliseconds to client:%d\n", milliToClient )
+    fmt.Printf("Round trip:%d\n", fullMilli )
+    
+    ab := clientTime - sentTime
+    fmt.Printf("server to client raw: %d\n", ab )
+    
+    bc := nowMilli - clientTime
+    fmt.Printf("client back to server raw: %d\n", bc )
     
     // What we estimate client time should be
     clientEstimate := sentTime + milliToClient
@@ -761,6 +769,12 @@ func parseTimeResult( response []byte ) int64 {
     clientDiff := clientTime - clientEstimate
     
     fmt.Printf("Client Offset:%d\n", clientDiff )
+    
+    serverEstimate := clientTime + milliToClient
+    
+    serverDiff := nowMilli - serverEstimate
+    
+    fmt.Printf("Server Offset:%d\n", serverDiff )
     
     return clientDiff
 }
@@ -794,7 +808,11 @@ func (self *DevHandler) handleImgStream( c *gin.Context ) {
         return
     }
     
-    conn.WriteMessage( ws.TextMessage, timeStampMessage() )
+    cwriter, _ := conn.NextWriter( ws.TextMessage )
+    //conn.WriteMessage( ws.TextMessage, timeStampMessage() )
+    cwriter.Write( timeStampMessage() )
+    cwriter.Close()
+    
     _, data, _ := conn.ReadMessage()
     clientOffset := parseTimeResult( data )
     
