@@ -327,7 +327,13 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
         
         //fmt.Printf("Sending frame to client\n")
         
-        // Don't try to send another frame if one has already been sent
+        if t == ws.TextMessage {
+            // Just send the message and continue
+            outSocket.WriteMessage( ws.TextMessage, frame.frame )
+            continue
+        }
+        
+        var timeBeforeSend int64
         var writer io.WriteCloser
         var err error
         if t != ws.TextMessage {
@@ -340,13 +346,13 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
                 
                 writer, err = outSocket.NextWriter( t )
                 if err == nil {
-                    nowMilli = time.Now().UnixMilli() + clientOffset
+                    timeBeforeSend = time.Now().UnixMilli()
+                    nowMilli = timeBeforeSend + clientOffset
+                    
                     nowBytes = []byte( fmt.Sprintf("%*d",100,nowMilli) )
                     toSend = append( toSend, nowBytes... )
                 }
             }
-        } else {
-            writer, err = outSocket.NextWriter( t )
         }
         if err != nil {
             fmt.Printf("Error creating outSocket writer: %s\n", err )
@@ -355,27 +361,32 @@ func (self *ProviderHandler) handleImgProvider( c *gin.Context ) {
             break
         }
         
-        go func() {
-            _, err = writer.Write( toSend )
-            if err == nil {
-                err = writer.Close()
-            }
-            if err != nil {
-                fmt.Printf("Error writing frame: %s\n", err )
-                outSocket = nil
-                provConn.stopImgStream( udid )
-                frameChan <- FrameMsg{
-                    msg: CMKick,
-                    frame: []byte{},
-                    frameType: 0,
-                }
-            }
-        }()
-        
-        // Sleep for the time expected for the client to receive the frame
-        if frameSleep != 0 {
-            time.Sleep( time.Millisecond * time.Duration( frameSleep ) )
+        _, err = writer.Write( toSend )
+        if err == nil {
+            err = writer.Close()
         }
+        if err != nil {
+            fmt.Printf("Error writing frame: %s\n", err )
+            outSocket = nil
+            provConn.stopImgStream( udid )
+            frameChan <- FrameMsg{
+                msg: CMKick,
+                frame: []byte{},
+                frameType: 0,
+            }
+        }
+        
+        if frameSleep == 0 { continue }
+        
+        timeAfterSend := time.Now().UnixMilli()
+        
+        timeSending := int32( timeAfterSend - timeBeforeSend )
+        
+        if timeSending > frameSleep { continue }
+        
+        milliToSleep := frameSleep - timeSending
+        
+        time.Sleep( time.Millisecond * time.Duration( milliToSleep ) )
     }
     
     self.devTracker.deleteClient( udid )
