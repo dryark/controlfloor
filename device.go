@@ -111,7 +111,8 @@ type SDeviceInfo struct {
 
 type SDeviceWdaPort struct {
     Udid        string `json:"udid"        example:"00008100-001338811EE10033"`
-    WdaPort     int    `json:"wdaPort"    example:"8107"`
+    WdaPort     int    `json:"wdaPort"     example:"8107"`
+    Ip          string `json:"ip"          example:"unknown or x.x.x.x"`
 }
 
 func (self *DevHandler) showWdaPort( c *gin.Context ) {
@@ -135,9 +136,31 @@ func (self *DevHandler) showWdaPort( c *gin.Context ) {
     
     port := dev.WdaPort
     
+    //
+    
+    provId := self.devTracker.getDevProvId( udid )
+    pc := self.devTracker.getProvConn( provId )
+    
+    done := make( chan bool )
+    
+    ip := "unknown"
+    
+    pc.doWifiIp( udid, func( _ uj.JNode, json []byte ) {
+        root, _ := uj.Parse( json )
+    
+        ip = root.Get("ip").String()
+
+        done <- true
+    } )
+    
+    <- done
+    
+    //
+    
     c.JSON( http.StatusOK, SDeviceWdaPort{
         Udid:    udid,
         WdaPort: port,
+        Ip:      ip,
     } )
 }
 

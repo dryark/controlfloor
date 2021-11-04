@@ -69,6 +69,18 @@ func (self *ProvHome) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"home\",udid:\"%s\"}\n",id,self.udid)
 }
 
+type ProvWifiIp struct {
+    udid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvWifiIp) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvWifiIp) needsResponse() (bool) { return true }
+func (self *ProvWifiIp) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"wifiIp\",udid:\"%s\"}\n",id,self.udid)
+}
+
 type ProvSource struct {
     udid string
     onRes func( uj.JNode,[]byte )

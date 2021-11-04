@@ -74,6 +74,14 @@ func (self *ProviderConnection) doSource( udid string, onDone func( uj.JNode, []
     self.provChan <- source
 }
 
+func (self *ProviderConnection) doWifiIp( udid string, onDone func( uj.JNode, []byte ) ) {
+    action := &ProvWifiIp{
+        udid: udid,
+        onRes: onDone,
+    }
+    self.provChan <- action
+}
+
 func (self *ProviderConnection) doShutdown( onDone func( uj.JNode, []byte ) ) {
     msg := &ProvShutdown{
         onRes: onDone,
