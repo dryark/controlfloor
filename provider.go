@@ -137,11 +137,16 @@ func (self *ReqTracker) processResp( msgType int, reqText []byte ) {
     last1 := string( []byte{ reqText[ len( reqText ) - 1 ] } )
     last2 := string( []byte{ reqText[ len( reqText ) - 2 ] } )
     if last1 != "}" && last2 != "}" {
-        fmt.Printf("respond not json; last1=%s\n", last1)
+        fmt.Printf("response not json; last1=%s\n", last1)
         return
     }
     
-    root, _ := uj.Parse( reqText )
+    root, _, err := uj.ParseFull( reqText )
+    if err != nil {
+        fmt.Printf("Could not parse response as json\n")
+        return
+    }
+    
     id := root.Get("id").Int()
     
     req := self.reqMap[ int16(id) ]
@@ -422,8 +427,13 @@ func (self *ProviderHandler) handleProviderWS( c *gin.Context ) {
     
     go func() { for {
         time.Sleep( time.Second * 5 )
-        provConn.doPing()
-        //fmt.Printf("triggered periodic ping\n")
+        provConn.doPing( func( root uj.JNode, raw []byte ) {
+            text := root.Get("text").String()
+            if text != "pong" {
+                amDone = true
+            }
+        } )
+        
         if amDone { break }
     } }()
     
@@ -431,8 +441,9 @@ func (self *ProviderHandler) handleProviderWS( c *gin.Context ) {
         t, msg, err := conn.ReadMessage()
         if err != nil {
             amDone = true
+        } else {
+            reqTracker.processResp( t, msg )
         }
-        reqTracker.processResp( t, msg )
         
         if amDone { break }
     } }()
@@ -441,6 +452,7 @@ func (self *ProviderHandler) handleProviderWS( c *gin.Context ) {
         ev := <- provChan
         err := reqTracker.sendReq( ev )
         if err != nil {
+            amDone = true
             break
         }        
     }

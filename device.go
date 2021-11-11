@@ -52,20 +52,26 @@ func (self *DevHandler) registerDeviceRoutes() {
     // - Video seems active/inactive
     
     //uAuth.GET("/devClick", showDevClick )
-    uAuth.POST("/device/click",     func( c *gin.Context ) { self.handleDevClick( c ) } )
-    uAuth.POST("/device/hardPress", func( c *gin.Context ) { self.handleDevHardPress( c ) } )
-    uAuth.POST("/device/longPress", func( c *gin.Context ) { self.handleDevLongPress( c ) } )
-    uAuth.POST("/device/home",      func( c *gin.Context ) { self.handleDevHome( c ) } )
-    uAuth.POST("/device/swipe",     func( c *gin.Context ) { self.handleDevSwipe( c ) } )
-    uAuth.POST("/device/keys",      func( c *gin.Context ) { self.handleKeys( c ) } )
-    uAuth.POST("/device/source",    func( c *gin.Context ) { self.handleSource( c ) } )
-    uAuth.POST("/device/shutdown",  func( c *gin.Context ) { self.handleShutdown( c ) } )
+    uAuth.POST("/device/click",       func( c *gin.Context ) { self.handleDevClick( c ) } )
+    uAuth.POST("/device/mouseDown",   func( c *gin.Context ) { self.handleDevMouseDown( c ) } )
+    uAuth.POST("/device/mouseUp",     func( c *gin.Context ) { self.handleDevMouseUp( c ) } )
+    uAuth.POST("/device/hardPress",   func( c *gin.Context ) { self.handleDevHardPress( c ) } )
+    uAuth.POST("/device/longPress",   func( c *gin.Context ) { self.handleDevLongPress( c ) } )
+    uAuth.POST("/device/home",        func( c *gin.Context ) { self.handleDevHome( c ) } )
+    uAuth.POST("/device/taskSwitcher",func( c *gin.Context ) { self.handleDevTaskSwitcher( c ) } )
+    uAuth.POST("/device/shake",       func( c *gin.Context ) { self.handleDevShake( c ) } )
+    uAuth.POST("/device/cc",          func( c *gin.Context ) { self.handleDevCC( c ) } )
+    uAuth.POST("/device/assistiveTouch", func( c *gin.Context ) { self.handleDevAssistiveTouch( c ) } )
+    uAuth.POST("/device/swipe",       func( c *gin.Context ) { self.handleDevSwipe( c ) } )
+    uAuth.POST("/device/keys",        func( c *gin.Context ) { self.handleKeys( c ) } )
+    uAuth.POST("/device/source",      func( c *gin.Context ) { self.handleSource( c ) } )
+    uAuth.POST("/device/shutdown",    func( c *gin.Context ) { self.handleShutdown( c ) } )
       
-    uAuth.GET("/device/info",       func( c *gin.Context ) { self.showDevInfo( c ) } )
-    uAuth.GET("/device/info/json",  func( c *gin.Context ) { self.showDevInfoJson( c ) } )
+    uAuth.GET("/device/info",         func( c *gin.Context ) { self.showDevInfo( c ) } )
+    uAuth.GET("/device/info/json",    func( c *gin.Context ) { self.showDevInfoJson( c ) } )
     
-    uAuth.GET("/device/imgStream",  func( c *gin.Context ) { self.handleImgStream( c ) } )
-    uAuth.GET("/device/ws",         func( c *gin.Context ) { self.handleDevWs( c ) } )
+    uAuth.GET("/device/imgStream",    func( c *gin.Context ) { self.handleImgStream( c ) } )
+    uAuth.GET("/device/ws",           func( c *gin.Context ) { self.handleDevWs( c ) } )
     
     uAuth.GET("/device/video", self.showDevVideo )
     uAuth.GET("/device/reserved", self.showDevReservedTest )
@@ -113,6 +119,7 @@ type SDeviceWdaPort struct {
     Udid        string `json:"udid"        example:"00008100-001338811EE10033"`
     WdaPort     int    `json:"wdaPort"     example:"8107"`
     Ip          string `json:"ip"          example:"unknown or x.x.x.x"`
+    Mac         string `json:"mac"         example:"mac address..."`
 }
 
 func (self *DevHandler) showWdaPort( c *gin.Context ) {
@@ -144,12 +151,14 @@ func (self *DevHandler) showWdaPort( c *gin.Context ) {
     done := make( chan bool )
     
     ip := "unknown"
+    mac := "unknown"
     
     pc.doWifiIp( udid, func( _ uj.JNode, json []byte ) {
         root, _ := uj.Parse( json )
     
         ip = root.Get("ip").String()
-
+        mac = root.Get("mac").String()
+        
         done <- true
     } )
     
@@ -161,6 +170,7 @@ func (self *DevHandler) showWdaPort( c *gin.Context ) {
         Udid:    udid,
         WdaPort: port,
         Ip:      ip,
+        Mac:     mac,
     } )
 }
 
@@ -313,6 +323,52 @@ func (self *DevHandler) handleDevClick( c *gin.Context ) {
     } )
 }
 
+// @Summary Device - Mouse down
+// @Router /device/mouseDown [POST]
+// @Param udid formData string true "Device UDID"
+// @Param x formData int true "x"
+// @Param y formData int true "y"
+func (self *DevHandler) handleDevMouseDown( c *gin.Context ) {
+    x, _ := strconv.Atoi( c.PostForm("x") )
+    y, _ := strconv.Atoi( c.PostForm("y") )
+    pc, udid := self.getPc( c )
+    
+    done := make( chan bool )
+    
+    pc.doMouseDown( udid, x, y, func( uj.JNode, []byte ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
+}
+
+// @Summary Device - Mouse up
+// @Router /device/mouseUp [POST]
+// @Param udid formData string true "Device UDID"
+// @Param x formData int true "x"
+// @Param y formData int true "y"
+func (self *DevHandler) handleDevMouseUp( c *gin.Context ) {
+    x, _ := strconv.Atoi( c.PostForm("x") )
+    y, _ := strconv.Atoi( c.PostForm("y") )
+    pc, udid := self.getPc( c )
+    
+    done := make( chan bool )
+    
+    pc.doMouseUp( udid, x, y, func( uj.JNode, []byte ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
+}
+
 // @Summary Device - Hard press coordinate
 // @Router /device/hardPress [POST]
 // @Param udid formData string true "Device UDID"
@@ -347,6 +403,82 @@ func (self *DevHandler) handleDevHome( c *gin.Context ) {
     done := make( chan bool )
     
     pc.doHome( udid, func( uj.JNode, []byte ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
+}
+
+// @Summary Device task switcher
+// @Router /device/taskSwitcher [POST]
+// @Param udid formData string true "Device UDID"
+func (self *DevHandler) handleDevTaskSwitcher( c *gin.Context ) {
+    pc, udid := self.getPc( c )
+    
+    done := make( chan bool )
+    
+    pc.doTaskSwitcher( udid, func( uj.JNode, []byte ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
+}
+
+// @Summary Device shake
+// @Router /device/shake [POST]
+// @Param udid formData string true "Device UDID"
+func (self *DevHandler) handleDevShake( c *gin.Context ) {
+    pc, udid := self.getPc( c )
+    
+    done := make( chan bool )
+    
+    pc.doShake( udid, func( uj.JNode, []byte ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
+}
+
+// @Summary Device control center
+// @Router /device/cc [POST]
+// @Param udid formData string true "Device UDID"
+func (self *DevHandler) handleDevCC( c *gin.Context ) {
+    pc, udid := self.getPc( c )
+    
+    done := make( chan bool )
+    
+    pc.doCC( udid, func( uj.JNode, []byte ) {
+        done <- true
+    } )
+    
+    <- done
+    
+    c.HTML( http.StatusOK, "error", gin.H{
+        "text": "ok",
+    } )
+}
+
+// @Summary Device assistive touch
+// @Router /device/assistiveTouch [POST]
+// @Param udid formData string true "Device UDID"
+func (self *DevHandler) handleDevAssistiveTouch( c *gin.Context ) {
+    pc, udid := self.getPc( c )
+    
+    done := make( chan bool )
+    
+    pc.doAssistiveTouch( udid, func( uj.JNode, []byte ) {
         done <- true
     } )
     

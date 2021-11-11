@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ControlFloor</title>
 
-<link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css" />
+<!--<link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.3.45/css/materialdesignicons.min.css" />-->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
 <link rel="stylesheet" href="/assets/css/styles.css" />
 <link rel="stylesheet" href="/assets/css/sidebar.css" />
 <link href="https://unpkg.com/@mountable/spinners@0.0.25/dist/mSpinnerSwirl.css" rel="stylesheet">
+<script src="//code.iconify.design/2/2.0.4/iconify.min.js"></script>
 
 <meta charset="utf-8">
 <style>
@@ -27,7 +28,9 @@
     font-size:64px;
     margin-right: 30px;
   }
-  #under i {
+  #under svg {
+    position: relative;
+    top: 10px;
     font-size:50px;
     cursor: pointer;
   }
@@ -160,6 +163,22 @@
       unwait();
     }, { udid, x, y } );
   }
+  function doMouseDown( pos ) {
+    var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
+    var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
+    wait();
+    req( 'POST', base + '/device/mouseDown', function() {
+      unwait();
+    }, { udid, x, y } );
+  }
+  function doMouseUp( pos ) {
+    var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
+    var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
+    wait();
+    req( 'POST', base + '/device/mouseUp', function() {
+      unwait();
+    }, { udid, x, y } );
+  }
   function doHardPress( pos ) {
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
@@ -258,7 +277,9 @@
   //capture[68] = 68; // delete; map to ascii delete
   capture2[39] = 39; // ' - quick search in firefox
   capture2[47] = 47; // / - quick search also
-  window.addEventListener("load", function(evt) {
+  //window.addEventListener("load", function(evt) {
+  Iconify.loadIcons( [], () => {
+    Iconify.stopObserving();
     filltext( "d_name", info.DeviceName );
     filltext( "d_model", info.ArtworkDeviceProductDescription );
     filltext( "d_iosversion", info.ProductVersion );
@@ -267,8 +288,13 @@
     var canvas    = getel("canvas");
     var ctx       = canvas.getContext("2d", { alpha: false });
     var home      = getel("home");
+    //var taskBtn   = getel("taskBtn");
+    //var shakeBtn  = getel("shakeBtn");
+    var ccBtn     = getel("ccBtn");
+    var atBtn     = getel("atBtn");
     var hardPress = getel("hardPress");
     var longPress = getel("longPress");
+    //var vectorBtn = getel("vectorBtn");
     var under     = getel("under");
     var vidbox    = getel("vidbox");
     var ws;
@@ -277,6 +303,10 @@
     var shutdown  = getel("shutdown");
     var sizes = [];
     var times = [];
+    
+    hardPress.childNodes[0].setAttribute("fill","");
+    longPress.childNodes[0].setAttribute("fill","");
+    //vectorBtn.childNodes[0].setAttribute("fill","");
     
     var ties = {};
     for( var i=0; i<notesjson.length; i++ ) {
@@ -334,16 +364,52 @@
         unwait();
       }, { udid } );  
     }
+    /*taskBtn.onclick = function( event ) {
+      wait();
+      req( 'POST', '/device/taskSwitcher', function() {
+        unwait();
+      }, { udid } );  
+    }
+    shakeBtn.onclick = function( event ) {
+      wait();
+      req( 'POST', '/device/shake', function() {
+        unwait();
+      }, { udid } );  
+    }*/
+    ccBtn.onclick = function( event ) {
+      wait();
+      req( 'POST', '/device/cc', function() {
+        unwait();
+      }, { udid } );  
+    }
+    atBtn.onclick = function( event ) {
+      wait();
+      req( 'POST', '/device/assistiveTouch', function() {
+        unwait();
+      }, { udid } );  
+    }
     hardPress.onclick = function( event ) {
       if( mode != 'hard' ) {
-        hardPress.className = 'mdi mdi-anvil mActive';
-        longPress.className = 'mdi mdi-alarm-multiple mInactive';
+        hardPress.setAttribute( "class", 'iconify iconfiy-mdi mActive' );
+        longPress.setAttribute( "class", 'iconify iconfiy-mdi mInactive');
+        //vectorBtn.setAttribute( "class", "iconify iconify-mdi mInactive");
         mode = 'hard';
       } else {
-        hardPress.className = 'mdi mdi-anvil mInactive';
+        hardPress.setAttribute( "class", 'iconify iconfiy-mdi mInactive' );
         mode = 'normal';
       }
     }
+    /*vectorBtn.onclick = function( event ) {
+      if( mode != 'vector' ) {
+        hardPress.setAttribute( "class", 'iconify iconfiy-mdi mInactive' );
+        longPress.setAttribute( "class", 'iconify iconfiy-mdi mInactive');
+        vectorBtn.setAttribute( "class", "iconify iconify-mdi mActive");
+        mode = 'vector';
+      } else {
+        vectorBtn.setAttribute( "class", 'iconify iconfiy-mdi mInactive' );
+        mode = 'normal';
+      }
+    }*/
     if( ties["hardpress"] ) {
       var det = ties["hardpress"];
       hardPress.onmouseover = det.mouseover;
@@ -351,11 +417,12 @@
     }
     longPress.onclick = function( event ) {
       if( mode != 'long' ) {
-        longPress.className = 'mdi mdi-alarm-multiple mActive';
-        hardPress.className = 'mdi mdi-anvil mInactive';
+        longPress.setAttribute( "class", 'iconify iconfiy-mdi mActive' );
+        hardPress.setAttribute( "class", 'iconify iconfiy-mdi mInactive' );
+        //vectorBtn.setAttribute( "class", "iconify iconify-mdi mInactive");
         mode = 'long';
       } else {
-        longPress.className = 'mdi mdi-alarm-multiple mInactive';
+        longPress.setAttribute( "class", 'iconify iconfiy-mdi mInactive' );
         mode = 'normal';
       }
     }
@@ -378,13 +445,24 @@
       var pos = getCursorPosition( canvas, event );
       if     ( mode == 'hard' ) doHardPress( pos );
       else if( mode == 'long' ) doLongPress( pos );
+      else if( mode == 'vector' ) doMouseDown( pos );
       else                      pos1 = pos;
     }
     
     canvas.onmouseup = function( event ) {
+      if( mode == 'vector' ) {
+        var pos = getCursorPosition( canvas, event );
+        doMouseUp( pos );
+        return;
+      }
+      if( !mouseDownDate ) {
+        alert("Cannot swipe from offscreen onto the screen");
+        return;
+      }
       if( mode != 'normal' ) return;
       mouseUpDate = new Date();
       var msDiff = mouseUpDate - mouseDownDate;
+      mouseDownDate = 0;
       var sDiff = msDiff / 1000;
       sDiff = Math.floor( sDiff * 100 ) / 100; // .00 resolution
       var pos2 = getCursorPosition( canvas, event );
@@ -578,7 +656,7 @@
             <table style="margin:auto; position: relative;"><tr>
                 <td valign="top">
                     <div style="display: inline-block">
-                        <a href='/'><i id='back' class="mdi mdi-arrow-left-bold"></i></a>
+                        <a href='/'><i id='back' class="iconify" data-icon="mdi-arrow-left-bold"></i></a>
                     </div>
                 </td>
                 <td style="position:relative" id="mid">
@@ -586,9 +664,14 @@
                     <canvas id="canvas" width="375" height="667" style="position:absolute; top:0px; left:0px;"></canvas><br>
                     <div style="position: absolute; width:375px; font-size: 32px" id="under">
                         <center>
-                            <i id='home' class="mdi mdi-home"></i>
-                            <i id='hardPress' class="mdi mdi-anvil mInactive"></i>
-                            <i id='longPress' class="mdi mdi-alarm-multiple mInactive"></i>
+                            <i id="home" class="iconify" data-icon="mdi-home"></i>
+                            <i id="hardPress" class="iconify" data-icon="mdi-anvil"></i>
+                            <i id="longPress" class="iconify" data-icon="mdi-alarm-multiple"></i>
+                            <!--<i id="taskBtn" class="iconify" data-icon="mdi-content-duplicate"></i>
+                            <i id="shakeBtn" class="iconify" data-icon="mdi-cards-outline"></i>-->
+                            <i id="ccBtn" class="iconify" data-icon="mdi-view-dashboard-outline"></i>
+                            <i id="atBtn" class="iconify" data-icon="mdi-circle-box"></i>
+                            <!--<i id="vectorBtn" class="iconify" data-icon="mdi-vector-polyline"></i>-->
                         </i>
                     </div>
                 </td>

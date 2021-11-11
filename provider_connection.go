@@ -20,11 +20,10 @@ func NewProviderConnection( provChan chan ProvBase ) (*ProviderConnection) {
     return self
 }
 
-func (self *ProviderConnection) doPing() {
+func (self *ProviderConnection) doPing( onDone func( uj.JNode, []byte ) ) {
     ping := &ProvPing{
         onRes: func( root uj.JNode, raw []byte ) {
-            //text := root.Get("text").String()
-            //fmt.Printf("pong text %s\n", text )
+            onDone( root,raw )
         },
     }
     self.provChan <- ping
@@ -32,6 +31,26 @@ func (self *ProviderConnection) doPing() {
 
 func (self *ProviderConnection) doClick( udid string, x int, y int, onDone func( uj.JNode, []byte ) ) {
     click := &ProvClick{
+        udid: udid,
+        x: x,
+        y: y,
+        onRes: onDone,
+    }
+    self.provChan <- click
+}
+
+func (self *ProviderConnection) doMouseDown( udid string, x int, y int, onDone func( uj.JNode, []byte ) ) {
+    click := &ProvMouseDown{
+        udid: udid,
+        x: x,
+        y: y,
+        onRes: onDone,
+    }
+    self.provChan <- click
+}
+
+func (self *ProviderConnection) doMouseUp( udid string, x int, y int, onDone func( uj.JNode, []byte ) ) {
+    click := &ProvMouseUp{
         udid: udid,
         x: x,
         y: y,
@@ -56,6 +75,38 @@ func (self *ProviderConnection) doLongPress( udid string, x int, y int ) {
         y: y,
     }
     self.provChan <- click
+}
+
+func (self *ProviderConnection) doTaskSwitcher( udid string, onDone func( uj.JNode, []byte ) ) {
+    action := &ProvTaskSwitcher{
+        udid: udid,
+        onRes: onDone,
+    }
+    self.provChan <- action
+}
+
+func (self *ProviderConnection) doShake( udid string, onDone func( uj.JNode, []byte ) ) {
+    action := &ProvShake{
+        udid: udid,
+        onRes: onDone,
+    }
+    self.provChan <- action
+}
+
+func (self *ProviderConnection) doCC( udid string, onDone func( uj.JNode, []byte ) ) {
+    action := &ProvCC{
+        udid: udid,
+        onRes: onDone,
+    }
+    self.provChan <- action
+}
+
+func (self *ProviderConnection) doAssistiveTouch( udid string, onDone func( uj.JNode, []byte ) ) {
+    action := &ProvAssistiveTouch{
+        udid: udid,
+        onRes: onDone,
+    }
+    self.provChan <- action
 }
 
 func (self *ProviderConnection) doHome( udid string, onDone func( uj.JNode, []byte ) ) {

@@ -35,6 +35,34 @@ func (self *ProvClick) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"click\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
 }
 
+type ProvMouseDown struct {
+    udid string
+    x int
+    y int
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvMouseDown) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvMouseDown) needsResponse() (bool) { return true }
+func (self *ProvMouseDown) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"mouseDown\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
+}
+
+type ProvMouseUp struct {
+    udid string
+    x int
+    y int
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvMouseUp) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvMouseUp) needsResponse() (bool) { return true }
+func (self *ProvMouseUp) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"mouseUp\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
+}
+
 type ProvHardPress struct {
     udid string
     x int
@@ -67,6 +95,54 @@ func (self *ProvHome) resHandler() ( func(data uj.JNode,rawData []byte) ) {
 func (self *ProvHome) needsResponse() (bool) { return true }
 func (self *ProvHome) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"home\",udid:\"%s\"}\n",id,self.udid)
+}
+
+type ProvShake struct {
+    udid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvShake) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvShake) needsResponse() (bool) { return true }
+func (self *ProvShake) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"shake\",udid:\"%s\"}\n",id,self.udid)
+}
+
+type ProvCC struct {
+    udid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvCC) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvCC) needsResponse() (bool) { return true }
+func (self *ProvCC) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"cc\",udid:\"%s\"}\n",id,self.udid)
+}
+
+type ProvAssistiveTouch struct {
+    udid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvAssistiveTouch) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvAssistiveTouch) needsResponse() (bool) { return true }
+func (self *ProvAssistiveTouch) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"assistiveTouch\",udid:\"%s\"}\n",id,self.udid)
+}
+
+type ProvTaskSwitcher struct {
+    udid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvTaskSwitcher) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvTaskSwitcher) needsResponse() (bool) { return true }
+func (self *ProvTaskSwitcher) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"taskSwitcher\",udid:\"%s\"}\n",id,self.udid)
 }
 
 type ProvWifiIp struct {

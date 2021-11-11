@@ -107,7 +107,7 @@ func runMain( *uc.Cmd ) {
         }
         err = http.ListenAndServeTLS( conf.listen, conf.crt, conf.key, r )
     } else {
-    	err = http.ListenAndServe( conf.listen, r )
+        err = http.ListenAndServe( conf.listen, r )
     }
     fmt.Printf("%s ListenAndServe Error %s\n", protocol, err)
 }

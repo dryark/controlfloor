@@ -43,10 +43,10 @@ body {
   }
 }
 
-.mInactive {
+.mInactive path {
   color: #444;
 }
 
-.mActive {
+.mActive path {
   color: red;
 }
