@@ -25,6 +25,7 @@ func NewSessionManager( r *gin.Engine ) *cfSessionManager {
     self := &cfSessionManager{
         session: scs.New(),
     }
+    self.session.Lifetime = ( 24 * 365 ) * time.Hour
     
     r.Use( self.Sessions() )
     //db, _ := sql.Open( "sqlite3", "sessions.db" )
