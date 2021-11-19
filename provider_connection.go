@@ -39,6 +39,24 @@ func (self *ProviderConnection) doClick( udid string, x int, y int, onDone func(
     self.provChan <- click
 }
 
+func (self *ProviderConnection) doLaunch( udid string, bid string, onDone func( uj.JNode, []byte ) ) {
+    action := &ProvLaunch{
+        udid: udid,
+        bid: bid,
+        onRes: onDone,
+    }
+    self.provChan <- action
+}
+
+func (self *ProviderConnection) doKill( udid string, bid string, onDone func( uj.JNode, []byte ) ) {
+    action := &ProvKill{
+        udid: udid,
+        bid: bid,
+        onRes: onDone,
+    }
+    self.provChan <- action
+}
+
 func (self *ProviderConnection) doMouseDown( udid string, x int, y int, onDone func( uj.JNode, []byte ) ) {
     click := &ProvMouseDown{
         udid: udid,

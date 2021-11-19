@@ -35,6 +35,32 @@ func (self *ProvClick) asText( id int16 ) (string) {
     return fmt.Sprintf("{id:%d,type:\"click\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
 }
 
+type ProvLaunch struct {
+    udid string
+    bid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvLaunch) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvLaunch) needsResponse() (bool) { return true }
+func (self *ProvLaunch) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"launch\",udid:\"%s\",bid:\"%s\"}\n",id,self.udid,self.bid)
+}
+
+type ProvKill struct {
+    udid string
+    bid string
+    onRes func( uj.JNode,[]byte )
+}
+func (self *ProvKill) resHandler() ( func(data uj.JNode,rawData []byte) ) {
+    return self.onRes
+}
+func (self *ProvKill) needsResponse() (bool) { return true }
+func (self *ProvKill) asText( id int16 ) (string) {
+    return fmt.Sprintf("{id:%d,type:\"kill\",udid:\"%s\",bid:\"%s\"}\n",id,self.udid,self.bid)
+}
+
 type ProvMouseDown struct {
     udid string
     x int
