@@ -86,11 +86,12 @@ func (self *ProviderConnection) doHardPress( udid string, x int, y int ) {
     self.provChan <- click
 }
 
-func (self *ProviderConnection) doLongPress( udid string, x int, y int ) {
+func (self *ProviderConnection) doLongPress( udid string, x int, y int, time float64 ) {
     click := &ProvLongPress{
         udid: udid,
         x: x,
         y: y,
+        time: time,
     }
     self.provChan <- click
 }

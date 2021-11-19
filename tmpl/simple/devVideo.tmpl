@@ -187,13 +187,13 @@
       unwait();
     }, { udid, x, y } );
   }
-  function doLongPress( pos ) {
+  function doLongPress( pos, time ) {
     var x = Math.floor( (pos[0]/displayWid)*clickWid ); 
     var y = Math.floor( (pos[1]/displayHeg)*clickHeg );
     wait();
     req( 'POST', base + '/device/longPress', function() {
       unwait();
-    }, { udid, x, y } );
+    }, { udid, x, y, time } );
   }
   function swipe( pos1, pos2, delay ) {
     var x1 = Math.floor( (pos1[0]/displayWid)*clickWid ); 
@@ -443,8 +443,7 @@
     canvas.onmousedown = function( event ) {
       mouseDownDate = new Date();
       var pos = getCursorPosition( canvas, event );
-      if     ( mode == 'hard' ) doHardPress( pos );
-      else if( mode == 'long' ) doLongPress( pos );
+      if( mode == 'hard' ) doHardPress( pos );
       else if( mode == 'vector' ) doMouseDown( pos );
       else                      pos1 = pos;
     }
@@ -459,13 +458,19 @@
         alert("Cannot swipe from offscreen onto the screen");
         return;
       }
-      if( mode != 'normal' ) return;
+      if( mode != 'normal' && mode != "long" ) return;
       mouseUpDate = new Date();
       var msDiff = mouseUpDate - mouseDownDate;
       mouseDownDate = 0;
       var sDiff = msDiff / 1000;
       sDiff = Math.floor( sDiff * 100 ) / 100; // .00 resolution
       var pos2 = getCursorPosition( canvas, event );
+      
+      if( mode == 'long' ) {
+        doLongPress( pos1, sDiff );
+        return;
+      }
+      
       var dx = Math.abs( pos2[0] - pos1[0] );
       var dy = Math.abs( pos2[1] - pos1[1] );
       if( dx > 3 || dy > 3 ) {
@@ -543,7 +548,7 @@
               
               //var bpms = (blob.size-100) / diff;
               //var bps = bpms * 1000;
-              //console.log( "bps " + bps );
+              console.log( "bps " + bps );
               sizes.push( blob.size );
               times.push( diff );
               if( sizes.length == 5 ) {
@@ -557,7 +562,7 @@
                   if( bps > 10000000 ) {
                       bps = 10000000;
                   }
-                  console.log("bps " + bps);
+                  //console.log("bps " + bps);
                   sizes = [];
                   times = [];
                   var avgFrame = Math.floor( totSize / 5 );
@@ -695,7 +700,7 @@
                         </tr>
                         <tr><td colspan=2 id="notes"></td></tr>
                         <tr><td colspan=2>
-                          <i id='shutdown' class="mdi mdi-bomb"></i>
+                          <i id='shutdown' class="iconify" data-icon="mdi-bomb"></i>
                         </tr></tr>
                         <tr>
                           <td colspan=2>

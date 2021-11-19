@@ -104,11 +104,12 @@ type ProvLongPress struct {
     udid string
     x int
     y int
+    time float64
 }
 func (self *ProvLongPress) resHandler() (func(uj.JNode,[]byte) ) { return nil }
 func (self *ProvLongPress) needsResponse() (bool) { return false }
 func (self *ProvLongPress) asText( id int16 ) (string) {
-    return fmt.Sprintf("{id:%d,type:\"longPress\",udid:\"%s\",x:%d,y:%d}\n",id,self.udid,self.x,self.y)
+    return fmt.Sprintf("{id:%d,type:\"longPress\",udid:\"%s\",x:%d,y:%d,time:\"%f\"}\n",id,self.udid,self.x,self.y,self.time)
 }
 
 type ProvHome struct {
