@@ -14,7 +14,7 @@
 		{{template "sidebar" dict "udid" .udid "deviceVideo" .deviceVideo}}
 		<div class="main">
 		    Device is currently reserved by {{ html .user }}<br>
-		    <a href="/devKick?udid={{html .udid}}">Kick user</a>
+		    <a href="/device/kick?udid={{html .udid}}">Kick user</a>
 		</div>
 	</body>
 </html>
